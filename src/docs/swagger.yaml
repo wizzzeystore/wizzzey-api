@@ -1,0 +1,3321 @@
+openapi: 3.0.0
+info:
+  title: E-commerce API
+  version: 1.0.0
+  description: API documentation for the E-commerce platform
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [Admin, User]
+        avatarUrl:
+          type: string
+          format: uri
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        categoryId:
+          type: string
+          format: uuid
+        images:
+          type: array
+          items:
+            type: string
+        inStock:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        parentId:
+          type: string
+          format: uuid
+        imageUrl:
+          type: string
+          format: uri
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId:
+                type: string
+                format: uuid
+              quantity:
+                type: integer
+              price:
+                type: number
+        status:
+          type: string
+          enum: [Pending, Processing, Shipped, Delivered, Cancelled]
+        totalAmount:
+          type: number
+        shippingAddress:
+          type: object
+          properties:
+            street:
+              type: string
+            city:
+              type: string
+            state:
+              type: string
+            country:
+              type: string
+            zipCode:
+              type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    FAQ:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        question:
+          type: string
+        answer:
+          type: string
+        category:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Inventory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+        minQuantity:
+          type: integer
+        maxQuantity:
+          type: integer
+        location:
+          type: string
+        status:
+          type: string
+          enum: [InStock, LowStock, OutOfStock]
+        lastUpdated:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ApiResponse:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [OK, ERROR]
+        message:
+          type: string
+        data:
+          type: object
+        meta:
+          type: object
+
+    PaginatedResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            pagination:
+              type: object
+              properties:
+                total:
+                  type: integer
+                page:
+                  type: integer
+                limit:
+                  type: integer
+                totalPages:
+                  type: integer
+                hasNextPage:
+                  type: boolean
+                hasPrevPage:
+                  type: boolean
+            filters:
+              type: object
+              properties:
+                applied:
+                  type: object
+                available:
+                  type: object
+            sort:
+              type: object
+              properties:
+                by:
+                  type: string
+                order:
+                  type: string
+                  enum: [asc, desc]
+
+    AppSettings:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        siteName:
+          type: string
+        siteDescription:
+          type: string
+        contactEmail:
+          type: string
+          format: email
+        contactPhone:
+          type: string
+        socialLinks:
+          type: object
+          properties:
+            facebook:
+              type: string
+              format: uri
+            twitter:
+              type: string
+              format: uri
+            instagram:
+              type: string
+              format: uri
+        themeSettings:
+          type: object
+          properties:
+            primaryColor:
+              type: string
+            secondaryColor:
+              type: string
+            fontFamily:
+              type: string
+        updatedAt:
+          type: string
+          format: date-time
+
+    ActivityLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        action:
+          type: string
+        entityType:
+          type: string
+        entityId:
+          type: string
+          format: uuid
+        details:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+
+    BlogPost:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        content:
+          type: string
+        author:
+          type: string
+          format: uuid
+        tags:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [Draft, Published, Archived]
+        featuredImage:
+          type: string
+          format: uri
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Customer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        addresses:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                enum: [Billing, Shipping]
+              street:
+                type: string
+              city:
+                type: string
+              state:
+                type: string
+              country:
+                type: string
+              zipCode:
+                type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    DiscountCode:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        type:
+          type: string
+          enum: [Percentage, Fixed]
+        value:
+          type: number
+        minPurchase:
+          type: number
+        maxDiscount:
+          type: number
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        isActive:
+          type: boolean
+        usageLimit:
+          type: integer
+        usageCount:
+          type: integer
+        appliesTo:
+          type: string
+          enum: [All, Products, Categories]
+        productIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        categoryIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        message:
+          type: string
+        type:
+          type: string
+          enum: [order, product, system, promotion]
+        isRead:
+          type: boolean
+        data:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Brand:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        logoUrl:
+          type: string
+          format: uri
+        website:
+          type: string
+          format: uri
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    DashboardStats:
+      type: object
+      properties:
+        todayStats:
+          type: object
+          properties:
+            orders:
+              type: integer
+              description: Number of orders today
+            revenue:
+              type: number
+              format: float
+              description: Total revenue today
+        overallStats:
+          type: object
+          properties:
+            totalOrders:
+              type: integer
+              description: Total number of orders
+            totalRevenue:
+              type: number
+              format: float
+              description: Total revenue
+            totalCustomers:
+              type: integer
+              description: Total number of customers
+        salesOverview:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+                description: Date of sales
+              revenue:
+                type: number
+                format: float
+                description: Revenue for the day
+              orders:
+                type: integer
+                description: Number of orders for the day
+        topSellingProducts:
+          type: array
+          items:
+            type: object
+            properties:
+              productId:
+                type: string
+                format: uuid
+                description: Product ID
+              productName:
+                type: string
+                description: Name of the product
+              totalQuantity:
+                type: integer
+                description: Total quantity sold
+              totalRevenue:
+                type: number
+                format: float
+                description: Total revenue from this product
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new customer
+      description: Register a new customer and create associated user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+                - shippingAddress
+              properties:
+                name:
+                  type: string
+                  description: Full name of the customer
+                email:
+                  type: string
+                  format: email
+                  description: Email address (must be unique)
+                password:
+                  type: string
+                  format: password
+                  description: Password (minimum 6 characters)
+                phone:
+                  type: string
+                  description: Phone number (optional)
+                shippingAddress:
+                  type: string
+                  description: Shipping address (required)
+                billingAddress:
+                  type: string
+                  description: Billing address (optional)
+      responses:
+        '201':
+          description: Customer registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      customer:
+                        $ref: '#/components/schemas/Customer'
+                      user:
+                        $ref: '#/components/schemas/User'
+                      token:
+                        type: string
+                        description: JWT token for authentication
+        '400':
+          description: Bad request - Email already registered or invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /auth/profile:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /users:
+    get:
+      tags:
+        - Users
+      summary: Get users or a specific user by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: id
+          schema:
+            type: string
+          description: ID of a specific user to fetch
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: name
+          schema:
+            type: string
+        - in: query
+          name: email
+          schema:
+            type: string
+        - in: query
+          name: role
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User data
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - $ref: '#/components/schemas/PaginatedResponse'
+              examples:
+                singleItem:
+                  value:
+                    type: "OK"
+                    data:
+                      user:
+                        id: "123e4567-e89b-12d3-a456-426614174000"
+                        name: "John Doe"
+                        email: "john@example.com"
+                        role: "User"
+                        avatarUrl: "https://example.com/avatar.jpg"
+                multipleItems:
+                  value:
+                    type: "OK"
+                    data:
+                      users: []
+                    pagination:
+                      total: 50
+                      page: 1
+                      limit: 10
+                      totalPages: 5
+                      hasNextPage: true
+                      hasPrevPage: false
+                    filters:
+                      applied:
+                        role: "User"
+                      available:
+                        name: "John"
+                        email: "john@example.com"
+                        role: "User"
+                    sort:
+                      by: "name"
+                      order: "asc"
+
+    post:
+      tags:
+        - Users
+      summary: Create a new user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    put:
+      tags:
+        - Users
+      summary: Update user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the user to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      tags:
+        - Users
+      summary: Delete user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the user to delete
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /products:
+    get:
+      tags:
+        - Products
+      summary: Get products or a specific product by ID
+      parameters:
+        - in: query
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: ID of a specific product to fetch
+        - in: query
+          name: product_ids
+          schema:
+            type: string
+          description: Array of product IDs (JSON string or comma-separated) to fetch specific products
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: name
+          schema:
+            type: string
+        - in: query
+          name: categoryId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: minPrice
+          schema:
+            type: number
+        - in: query
+          name: maxPrice
+          schema:
+            type: number
+        - in: query
+          name: inStock
+          schema:
+            type: boolean
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            default: createdAt
+        - in: query
+          name: sortOrder
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: Product data
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - $ref: '#/components/schemas/PaginatedResponse'
+              examples:
+                singleItem:
+                  value:
+                    type: "OK"
+                    data:
+                      product:
+                        id: "123e4567-e89b-12d3-a456-426614174000"
+                        name: "Smartphone X"
+                        description: "Latest smartphone with advanced features"
+                        price: 999.99
+                        categoryId: "123e4567-e89b-12d3-a456-426614174001"
+                        images: ["https://example.com/phone1.jpg"]
+                        inStock: true
+                multipleItems:
+                  value:
+                    type: "OK"
+                    data:
+                      products: []
+                    pagination:
+                      total: 50
+                      page: 1
+                      limit: 10
+                      totalPages: 5
+                      hasNextPage: true
+                      hasPrevPage: false
+                    filters:
+                      applied:
+                        categoryId: "123e4567-e89b-12d3-a456-426614174001"
+                        minPrice: 500
+                        maxPrice: 1000
+                      available:
+                        categoryId: "123e4567-e89b-12d3-a456-426614174001"
+                        minPrice: 500
+                        maxPrice: 1000
+                        inStock: true
+                        product_ids: "123e4567-e89b-12d3-a456-426614174000,123e4567-e89b-12d3-a456-426614174001"
+                    sort:
+                      by: "price"
+                      order: "asc"
+                productIdsResponse:
+                  value:
+                    type: "OK"
+                    data:
+                      products: []
+                      requestedIds: ["123e4567-e89b-12d3-a456-426614174000", "123e4567-e89b-12d3-a456-426614174001"]
+                      foundIds: ["123e4567-e89b-12d3-a456-426614174000"]
+                      missingIds: ["123e4567-e89b-12d3-a456-426614174001"]
+
+    post:
+      tags:
+        - Products
+      summary: Create a new product
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+                - price
+                - sku
+                - categoryId
+                - files
+              properties:
+                name:
+                  type: string
+                  description: Name of the product
+                description:
+                  type: string
+                  description: Description of the product
+                price:
+                  type: number
+                  description: Price of the product
+                sku:
+                  type: string
+                  description: Stock Keeping Unit (SKU) of the product
+                categoryId:
+                  type: string
+                  format: uuid
+                  description: ID of the category the product belongs to
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Image files to upload (at least one required)
+                brandId:
+                  type: string
+                  format: uuid
+                  description: ID of the brand (optional)
+                compareAtPrice:
+                  type: number
+                  description: Compare at price (optional)
+                costPrice:
+                  type: number
+                  description: Cost price (optional)
+                stock:
+                  type: number
+                  description: Stock quantity (optional, default 0)
+                lowStockThreshold:
+                  type: number
+                  description: Low stock threshold (optional)
+                availableSizes:
+                  type: array
+                  items:
+                    type: string
+                  description: Available sizes (optional)
+                colors:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      code:
+                        type: string
+                  description: Colors (optional)
+                weight:
+                  type: object
+                  properties:
+                    value:
+                      type: number
+                    unit:
+                      type: string
+                      enum: [g, kg, lb, oz]
+                  description: Weight (optional)
+                dimensions:
+                  type: object
+                  properties:
+                    length:
+                      type: number
+                    width:
+                      type: number
+                    height:
+                      type: number
+                    unit:
+                      type: string
+                      enum: [cm, m, in]
+                  description: Dimensions (optional)
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  description: Tags (optional)
+                status:
+                  type: string
+                  enum: [draft, active, archived, out_of_stock]
+                  description: Product status (optional, default draft)
+                isFeatured:
+                  type: boolean
+                  description: Whether the product is featured (optional, default false)
+                seo:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                    description:
+                      type: string
+                    keywords:
+                      type: array
+                      items:
+                        type: string
+                  description: SEO details (optional)
+                ratings:
+                  type: object
+                  properties:
+                    average:
+                      type: number
+                    count:
+                      type: number
+                  description: Ratings (optional)
+                barcode:
+                  type: string
+                  description: Barcode (optional)
+                media:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                      type:
+                        type: string
+                        enum: [image, video]
+                      alt:
+                        type: string
+                  description: Additional media (optional)
+      responses:
+        '201':
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Product'
+
+    put:
+      tags:
+        - Products
+      summary: Update product
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the product to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+      responses:
+        '200':
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      tags:
+        - Products
+      summary: Delete product
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the product to delete
+      responses:
+        '200':
+          description: Product deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /categories:
+    get:
+      tags:
+        - Categories
+      summary: Get all categories (optionally filtered by id, name, parentId, and paginated)
+      parameters:
+        - in: query
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: Optional ID (valid ObjectId) to filter by
+        - in: query
+          name: name
+          schema:
+            type: string
+          description: Optional name (case insensitive regex) to filter by
+        - in: query
+          name: parentId
+          schema:
+            type: string
+            format: uuid
+          description: Optional parent category ID (valid ObjectId) to filter by
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number (default 1)
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page (default 10)
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            default: createdAt
+          description: Field to sort by (default "createdAt")
+        - in: query
+          name: sortOrder
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: Sort order (default "desc")
+      responses:
+        '200':
+          description: Categories retrieved successfully (paginated)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    enum: [OK]
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      categories:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Category'
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      limit:
+                        type: integer
+                      totalPages:
+                        type: integer
+                      hasNextPage:
+                        type: boolean
+                      hasPrevPage:
+                        type: boolean
+                      filters:
+                        type: object
+                        properties:
+                          applied:
+                            type: object
+                          available:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              name:
+                                type: string
+                              parentId:
+                                type: string
+                      sort:
+                        type: object
+                        properties:
+                          by:
+                            type: string
+                          order:
+                            type: string
+        '500':
+          description: Internal server error (e.g. "Failed to retrieve categories")
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags:
+        - Categories
+      summary: Create a new category (with optional image upload)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  description: Category name (required, min 2, max 50 chars)
+                description:
+                  type: string
+                  description: Category description (optional, max 500 chars)
+                parentId:
+                  type: string
+                  format: uuid
+                  description: Parent category ID (optional, valid ObjectId)
+                slug:
+                  type: string
+                  description: Slug (optional, auto-generated if not provided)
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Image file(s) (optional, at most 10 files)
+                icon:
+                  type: string
+                  description: Icon (optional)
+                isActive:
+                  type: boolean
+                  default: true
+                  description: Whether the category is active (optional)
+                displayOrder:
+                  type: number
+                  default: 0
+                  description: Display order (optional)
+                seo:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                      description: SEO title (optional)
+                    description:
+                      type: string
+                      description: SEO description (optional)
+                    keywords:
+                      type: array
+                      items:
+                        type: string
+                      description: SEO keywords (optional)
+                attributes:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - name
+                      - type
+                    properties:
+                      name:
+                        type: string
+                        description: Attribute name (required)
+                      type:
+                        type: string
+                        enum: [text, number, boolean, select, multiselect]
+                        description: Attribute type (required)
+                      options:
+                        type: array
+                        items:
+                          type: string
+                        description: Options (for select/multiselect) (optional)
+                      required:
+                        type: boolean
+                        default: false
+                        description: Whether the attribute is required (optional)
+                      filterable:
+                        type: boolean
+                        default: false
+                        description: Whether the attribute is filterable (optional)
+                      searchable:
+                        type: boolean
+                        default: false
+                        description: Whether the attribute is searchable (optional)
+                media:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - url
+                    properties:
+                      url:
+                        type: string
+                        description: Media URL (required)
+                      type:
+                        type: string
+                        enum: [image, video]
+                        default: image
+                        description: Media type (optional)
+                      alt:
+                        type: string
+                        description: Alt text (optional)
+      responses:
+        '201':
+          description: Category created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Category'
+        '400':
+          description: Bad request (e.g. "Invalid parent category ID")
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error (e.g. "Failed to create category")
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    put:
+      tags:
+        - Categories
+      summary: Update a category (by ID) (with optional image upload)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the category to update (valid ObjectId)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Category name (optional, min 2, max 50 chars)
+                description:
+                  type: string
+                  description: Category description (optional, max 500 chars)
+                parentId:
+                  type: string
+                  format: uuid
+                  description: Parent category ID (optional, valid ObjectId)
+                slug:
+                  type: string
+                  description: Slug (optional, auto-generated if name is modified)
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Image file(s) (optional, at most 10 files)
+                icon:
+                  type: string
+                  description: Icon (optional)
+                isActive:
+                  type: boolean
+                  default: true
+                  description: Whether the category is active (optional)
+                displayOrder:
+                  type: number
+                  default: 0
+                  description: Display order (optional)
+                seo:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                      description: SEO title (optional)
+                    description:
+                      type: string
+                      description: SEO description (optional)
+                    keywords:
+                      type: array
+                      items:
+                        type: string
+                      description: SEO keywords (optional)
+                attributes:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - name
+                      - type
+                    properties:
+                      name:
+                        type: string
+                        description: Attribute name (required)
+                      type:
+                        type: string
+                        enum: [text, number, boolean, select, multiselect]
+                        description: Attribute type (required)
+                      options:
+                        type: array
+                        items:
+                          type: string
+                        description: Options (for select/multiselect) (optional)
+                      required:
+                        type: boolean
+                        default: false
+                        description: Whether the attribute is required (optional)
+                      filterable:
+                        type: boolean
+                        default: false
+                        description: Whether the attribute is filterable (optional)
+                      searchable:
+                        type: boolean
+                        default: false
+                        description: Whether the attribute is searchable (optional)
+                media:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - url
+                    properties:
+                      url:
+                        type: string
+                        description: Media URL (required)
+                      type:
+                        type: string
+                        enum: [image, video]
+                        default: image
+                        description: Media type (optional)
+                      alt:
+                        type: string
+                        description: Alt text (optional)
+      responses:
+        '200':
+          description: Category updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Category'
+        '400':
+          description: Bad request (e.g. "Invalid category ID")
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error (e.g. "Failed to update category")
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags:
+        - Categories
+      summary: Delete a category (by ID)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the category to delete (valid ObjectId)
+      responses:
+        '200':
+          description: Category deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          description: Bad request (e.g. "Invalid category ID")
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error (e.g. "Failed to delete category")
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /categories/{id}:
+    get:
+      tags:
+        - Categories
+      summary: Get a single category (by ID)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the category (valid ObjectId)
+      responses:
+        '200':
+          description: Category retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Category'
+        '400':
+          description: Bad request (e.g. "Invalid category ID")
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: Category not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error (e.g. "Failed to retrieve category")
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /faqs:
+    get:
+      tags:
+        - FAQs
+      summary: Get FAQs or a specific FAQ by ID
+      parameters:
+        - in: query
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: ID of a specific FAQ to fetch
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: question
+          schema:
+            type: string
+        - in: query
+          name: category
+          schema:
+            type: string
+      responses:
+        '200':
+          description: FAQ data
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - $ref: '#/components/schemas/PaginatedResponse'
+              examples:
+                singleItem:
+                  value:
+                    type: "OK"
+                    data:
+                      faq:
+                        id: "123e4567-e89b-12d3-a456-426614174000"
+                        question: "What is your return policy?"
+                        answer: "We accept returns within 30 days of purchase."
+                        category: "Shipping"
+                multipleItems:
+                  value:
+                    type: "OK"
+                    data:
+                      faqs: []
+                    pagination:
+                      total: 50
+                      page: 1
+                      limit: 10
+                      totalPages: 5
+                      hasNextPage: true
+                      hasPrevPage: false
+                    filters:
+                      applied:
+                        category: "Shipping"
+                      available:
+                        question: "return policy"
+                        category: "Shipping"
+                    sort:
+                      by: "createdAt"
+                      order: "desc"
+
+    post:
+      tags:
+        - FAQs
+      summary: Create a new FAQ
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FAQ'
+      responses:
+        '201':
+          description: FAQ created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    put:
+      tags:
+        - FAQs
+      summary: Update FAQ
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the FAQ to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FAQ'
+      responses:
+        '200':
+          description: FAQ updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      tags:
+        - FAQs
+      summary: Delete FAQ
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the FAQ to delete
+      responses:
+        '200':
+          description: FAQ deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /notifications:
+    get:
+      tags:
+        - Notifications
+      summary: Get user notifications
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+
+  /notifications/{id}/read:
+    patch:
+      tags:
+        - Notifications
+      summary: Mark notification as read
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Notification marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Notification'
+
+  /notifications/read-all:
+    patch:
+      tags:
+        - Notifications
+      summary: Mark all notifications as read
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All notifications marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /notifications/{id}:
+    delete:
+      tags:
+        - Notifications
+      summary: Delete notification
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Notification deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /notifications/unread/count:
+    get:
+      tags:
+        - Notifications
+      summary: Get unread notification count
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Unread notification count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+
+  /brands:
+    get:
+      tags:
+        - Brands
+      summary: Get all brands (optionally filtered by search term)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: searchTerm
+          schema:
+            type: string
+          description: Optional search term to filter brands by name (case insensitive)
+      responses:
+        '200':
+          description: Brands retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      brands:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Brand'
+        '500':
+          description: Internal server error (e.g. "Failed to retrieve brands")
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    post:
+      tags:
+        - Brands
+      summary: Create a new brand
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  description: Brand name (required, unique, min 2, max 50 chars)
+                description:
+                  type: string
+                  description: Brand description (optional, max 1000 chars)
+                logo:
+                  type: object
+                  properties:
+                    url:
+                      type: string
+                      description: Logo URL (optional, must be a valid http(s) URL)
+                    alt:
+                      type: string
+                      description: Alt text (optional)
+                website:
+                  type: string
+                  description: Website URL (optional, must be a valid http(s) URL)
+                contact:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                      description: Contact email (optional, must be a valid email)
+                    phone:
+                      type: string
+                      description: Contact phone (optional)
+                    address:
+                      type: object
+                      properties:
+                        street:
+                          type: string
+                        city:
+                          type: string
+                        state:
+                          type: string
+                        country:
+                          type: string
+                        zipCode:
+                          type: string
+                socialMedia:
+                  type: object
+                  properties:
+                    facebook:
+                      type: string
+                    twitter:
+                      type: string
+                    instagram:
+                      type: string
+                    linkedin:
+                      type: string
+                orderPlaced:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      orderId:
+                        type: string
+                        required: true
+                      status:
+                        type: string
+                        enum: [pending, processing, completed, cancelled]
+                        default: pending
+                      deliveryDate:
+                        type: string
+                        format: date-time
+                      notes:
+                        type: string
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            productId:
+                              type: string
+                              required: true
+                            quantity:
+                              type: number
+                              required: true
+                              minimum: 1
+                            price:
+                              type: number
+                              required: true
+                              minimum: 0
+                      totalAmount:
+                        type: number
+                        required: true
+                        minimum: 0
+                outOfStockOrders:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      productId:
+                        type: string
+                        required: true
+                      quantity:
+                        type: number
+                        required: true
+                        minimum: 1
+                      status:
+                        type: string
+                        enum: [pending, submitted, received, cancelled]
+                        default: pending
+                      submittedAt:
+                        type: string
+                        format: date-time
+                      expectedDeliveryDate:
+                        type: string
+                        format: date-time
+                      notes:
+                        type: string
+                isActive:
+                  type: boolean
+                  default: true
+                  description: Whether the brand is active (optional)
+                displayOrder:
+                  type: number
+                  default: 0
+                  description: Display order (optional)
+                seo:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                    description:
+                      type: string
+                    keywords:
+                      type: array
+                      items:
+                        type: string
+      responses:
+        '201':
+          description: Brand created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Brand'
+        '500':
+          description: Internal server error (e.g. "Failed to create brand")
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    put:
+      tags:
+        - Brands
+      summary: Update a brand (by ID)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the brand to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Brand name (optional, unique, min 2, max 50 chars)
+                description:
+                  type: string
+                  description: Brand description (optional, max 1000 chars)
+                logo:
+                  type: object
+                  properties:
+                    url:
+                      type: string
+                      description: Logo URL (optional, must be a valid http(s) URL)
+                    alt:
+                      type: string
+                      description: Alt text (optional)
+                website:
+                  type: string
+                  description: Website URL (optional, must be a valid http(s) URL)
+                contact:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                      description: Contact email (optional, must be a valid email)
+                    phone:
+                      type: string
+                      description: Contact phone (optional)
+                    address:
+                      type: object
+                      properties:
+                        street:
+                          type: string
+                        city:
+                          type: string
+                        state:
+                          type: string
+                        country:
+                          type: string
+                        zipCode:
+                          type: string
+                socialMedia:
+                  type: object
+                  properties:
+                    facebook:
+                      type: string
+                    twitter:
+                      type: string
+                    instagram:
+                      type: string
+                    linkedin:
+                      type: string
+                orderPlaced:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      orderId:
+                        type: string
+                        required: true
+                      status:
+                        type: string
+                        enum: [pending, processing, completed, cancelled]
+                        default: pending
+                      deliveryDate:
+                        type: string
+                        format: date-time
+                      notes:
+                        type: string
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            productId:
+                              type: string
+                              required: true
+                            quantity:
+                              type: number
+                              required: true
+                              minimum: 1
+                            price:
+                              type: number
+                              required: true
+                              minimum: 0
+                      totalAmount:
+                        type: number
+                        required: true
+                        minimum: 0
+                outOfStockOrders:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      productId:
+                        type: string
+                        required: true
+                      quantity:
+                        type: number
+                        required: true
+                        minimum: 1
+                      status:
+                        type: string
+                        enum: [pending, submitted, received, cancelled]
+                        default: pending
+                      submittedAt:
+                        type: string
+                        format: date-time
+                      expectedDeliveryDate:
+                        type: string
+                        format: date-time
+                      notes:
+                        type: string
+                isActive:
+                  type: boolean
+                  default: true
+                  description: Whether the brand is active (optional)
+                displayOrder:
+                  type: number
+                  default: 0
+                  description: Display order (optional)
+                seo:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                    description:
+                      type: string
+                    keywords:
+                      type: array
+                      items:
+                        type: string
+      responses:
+        '200':
+          description: Brand updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Brand'
+        '404':
+          description: Brand not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error (e.g. "Failed to update brand")
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+    delete:
+      tags:
+        - Brands
+      summary: Delete a brand (by ID)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the brand to delete
+      responses:
+        '200':
+          description: Brand deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: Brand not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error (e.g. "Failed to delete brand")
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /brands/{id}:
+    get:
+      tags:
+        - Brands
+      summary: Get a single brand (by ID)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the brand to fetch
+      responses:
+        '200':
+          description: Brand retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Brand'
+        '404':
+          description: Brand not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error (e.g. "Failed to retrieve brand")
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /brands/{id}/orders:
+    post:
+      tags:
+        - Brands
+      summary: Add an order placed (for a brand)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the brand
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - orderId
+                - items
+                - totalAmount
+              properties:
+                orderId:
+                  type: string
+                  description: Order ID (required)
+                status:
+                  type: string
+                  enum: [pending, processing, completed, cancelled]
+                  default: pending
+                  description: Order status (optional)
+                deliveryDate:
+                  type: string
+                  format: date-time
+                  description: Delivery date (optional)
+                notes:
+                  type: string
+                  description: Order notes (optional)
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - productId
+                      - quantity
+                      - price
+                    properties:
+                      productId:
+                        type: string
+                        description: Product ID (required)
+                      quantity:
+                        type: number
+                        minimum: 1
+                        description: Quantity (required)
+                      price:
+                        type: number
+                        minimum: 0
+                        description: Price (required)
+                totalAmount:
+                  type: number
+                  minimum: 0
+                  description: Total order amount (required)
+      responses:
+        '201':
+          description: Order added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+              $ref: '#/components/schemas/Brand'
+        '404':
+          description: Brand not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error (e.g. "Failed to add order")
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /brands/{brandId}/orders/{orderId}:
+    put:
+      tags:
+        - Brands
+      summary: Update an order placed's status (for a brand)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: brandId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the brand
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: string
+          description: ID of the order (as stored in the brand's orderPlaced array)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [pending, processing, completed, cancelled]
+                  description: New status (required)
+                deliveryDate:
+                  type: string
+                  format: date-time
+                  description: Delivery date (optional)
+                notes:
+                  type: string
+                  description: Order notes (optional)
+      responses:
+        '200':
+          description: Order status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Brand'
+        '404':
+          description: Brand or order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error (e.g. "Failed to update order status")
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /brands/{id}/out-of-stock:
+    post:
+      tags:
+        - Brands
+      summary: Add an out-of-stock order (for a brand)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the brand
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - productId
+                - quantity
+              properties:
+                productId:
+                  type: string
+                  description: Product ID (required)
+                quantity:
+                  type: number
+                  minimum: 1
+                  description: Quantity (required)
+                status:
+                  type: string
+                  enum: [pending, submitted, received, cancelled]
+                  default: pending
+                  description: Order status (optional)
+                submittedAt:
+                  type: string
+                  format: date-time
+                  description: Submitted date (optional)
+                expectedDeliveryDate:
+                  type: string
+                  format: date-time
+                  description: Expected delivery date (optional)
+                notes:
+                  type: string
+                  description: Order notes (optional)
+      responses:
+        '201':
+          description: Out-of-stock order added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Brand'
+        '404':
+          description: Brand not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error (e.g. "Failed to add out-of-stock order")
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /brands/{brandId}/out-of-stock/{orderId}:
+    put:
+      tags:
+        - Brands
+      summary: Update an out-of-stock order's status (for a brand)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: brandId
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the brand
+        - in: path
+          name: orderId
+          required: true
+          schema:
+            type: string
+          description: ID of the out-of-stock order (as stored in the brand's outOfStockOrders array)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [pending, submitted, received, cancelled]
+                  description: New status (required)
+                notes:
+                  type: string
+                  description: Order notes (optional)
+      responses:
+        '200':
+          description: Out-of-stock order status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Brand'
+        '404':
+          description: Brand or out-of-stock order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error (e.g. "Failed to update out-of-stock order status")
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /inventory:
+    get:
+      tags:
+        - Inventory
+      summary: Get inventory items
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [InStock, LowStock, OutOfStock]
+      responses:
+        '200':
+          description: List of inventory items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Inventory'
+
+    post:
+      tags:
+        - Inventory
+      summary: Create inventory item
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Inventory'
+      responses:
+        '201':
+          description: Inventory item created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Inventory'
+
+  /inventory/{id}:
+    get:
+      tags:
+        - Inventory
+      summary: Get inventory item by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Inventory item details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Inventory'
+
+    put:
+      tags:
+        - Inventory
+      summary: Update inventory item
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Inventory'
+      responses:
+        '200':
+          description: Inventory item updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Inventory'
+
+    delete:
+      tags:
+        - Inventory
+      summary: Delete inventory item
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Inventory item deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /discount-codes:
+    get:
+      tags:
+        - Discount Codes
+      summary: Get all discount codes
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: isActive
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of discount codes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DiscountCode'
+
+    post:
+      tags:
+        - Discount Codes
+      summary: Create a new discount code
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiscountCode'
+      responses:
+        '201':
+          description: Discount code created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/DiscountCode'
+
+  /blog-posts:
+    get:
+      tags:
+        - Blog Posts
+      summary: Get all blog posts
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [draft, published, archived]
+      responses:
+        '200':
+          description: List of blog posts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BlogPost'
+
+    post:
+      tags:
+        - Blog Posts
+      summary: Create a new blog post
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlogPost'
+      responses:
+        '201':
+          description: Blog post created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BlogPost'
+
+  /dashboard/stats:
+    get:
+      tags:
+        - Dashboard
+      summary: Get dashboard statistics
+      description: Retrieve comprehensive dashboard statistics including today's orders, total revenue, total orders, total customers, sales overview, and top selling products
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dashboard statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/DashboardStats'
+        '401':
+          description: Unauthorized - Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /orders:
+    get:
+      tags:
+        - Orders
+      summary: Get all orders
+      description: Retrieve a paginated list of all orders with optional sorting and filtering
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            default: createdAt
+          description: Field to sort by
+        - in: query
+          name: sortOrder
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: Sort order
+      responses:
+        '200':
+          description: Orders retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      orders:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Order'
+        '401':
+          description: Unauthorized - Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    post:
+      tags:
+        - Orders
+      summary: Create a new order
+      description: Create a new order with customer information, items, and optional media files
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - customerInfo
+                - items
+                - totalAmount
+              properties:
+                customerInfo:
+                  type: object
+                  required:
+                    - name
+                    - email
+                    - shippingAddress
+                  properties:
+                    name:
+                      type: string
+                    email:
+                      type: string
+                      format: email
+                    phone:
+                      type: string
+                    shippingAddress:
+                      type: string
+                    billingAddress:
+                      type: string
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - productId
+                      - productName
+                      - quantity
+                      - price
+                    properties:
+                      productId:
+                        type: string
+                      productName:
+                        type: string
+                      quantity:
+                        type: number
+                      price:
+                        type: number
+                      selectedSize:
+                        type: string
+                totalAmount:
+                  type: number
+                status:
+                  type: string
+                  enum: [Pending, Processing, Shipped, Delivered, Cancelled, Refunded]
+                  default: Pending
+                notes:
+                  type: string
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Optional media files (max 10)
+      responses:
+        '201':
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      order:
+                        $ref: '#/components/schemas/Order'
+                      notifications:
+                        type: object
+                        properties:
+                          sent:
+                            type: array
+                            items:
+                              type: string
+        '400':
+          description: Bad request - Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          description: Unauthorized - Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /orders/my-orders:
+    get:
+      tags:
+        - Orders
+      summary: Get orders by current user ID
+      description: Retrieve a paginated list of orders for the currently logged-in user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of items per page
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+            default: createdAt
+          description: Field to sort by
+        - in: query
+          name: sortOrder
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: Sort order
+      responses:
+        '200':
+          description: User orders retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponse'
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      orders:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Order'
+        '401':
+          description: Unauthorized - Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /orders/today:
+    get:
+      tags:
+        - Orders
+      summary: Get today's orders
+      description: Retrieve all orders placed today with summary statistics
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: brandId
+          schema:
+            type: string
+            default: ""
+          description: Brand Id for the brand
+      responses:
+        '200':
+          description: Today's orders retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      orders:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Order'
+                      summary:
+                        type: object
+                        properties:
+                          total:
+                            type: integer
+                          totalAmount:
+                            type: number
+        '401':
+          description: Unauthorized - Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /orders/{id}:
+    get:
+      tags:
+        - Orders
+      summary: Get a single order by ID
+      description: Retrieve detailed information about a specific order
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the order to retrieve
+      responses:
+        '200':
+          description: Order retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      order:
+                        $ref: '#/components/schemas/Order'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          description: Unauthorized - Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    put:
+      tags:
+        - Orders
+      summary: Update an order by ID
+      description: Update an existing order's information
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the order to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                customerInfo:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    email:
+                      type: string
+                    phone:
+                      type: string
+                    shippingAddress:
+                      type: string
+                    billingAddress:
+                      type: string
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      productId:
+                        type: string
+                      productName:
+                        type: string
+                      quantity:
+                        type: number
+                      price:
+                        type: number
+                      selectedSize:
+                        type: string
+                totalAmount:
+                  type: number
+                status:
+                  type: string
+                  enum: [Pending, Processing, Shipped, Delivered, Cancelled, Refunded]
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Order updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      order:
+                        $ref: '#/components/schemas/Order'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          description: Unauthorized - Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+    delete:
+      tags:
+        - Orders
+      summary: Delete an order by ID
+      description: Delete a specific order
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the order to delete
+      responses:
+        '200':
+          description: Order deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          description: Unauthorized - Invalid or missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse' 
