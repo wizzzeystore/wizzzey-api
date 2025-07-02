@@ -6,11 +6,11 @@ import { upload, compressFiles } from '../middleware/fileUpload.mw.js';
 const router = express.Router();
 
 // Apply authentication middleware to all routes
-router.use(verifyToken);
 
 // Brand CRUD operations
 router.get('/', brandController.getBrands);
 router.get('/:id', brandController.getBrand);
+router.use(verifyToken);
 router.post('/', upload.single('logo'), compressFiles, brandController.createBrand);
 router.put('/:id', upload.single('logo'), compressFiles, brandController.updateBrand);
 router.delete('/:id', brandController.deleteBrand);

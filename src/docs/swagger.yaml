@@ -833,19 +833,21 @@ paths:
             type: integer
             default: 1
         - in: query
-          name: limit
-          schema:
-            type: integer
-            default: 10
-        - in: query
-          name: name
-          schema:
-            type: string
-        - in: query
-          name: categoryId
+          name: brandId
           schema:
             type: string
             format: uuid
+          description: ID of the brand to filter products by
+        - in: query
+          name: size
+          schema:
+            type: string
+          description: Size to filter products by (optional)
+        - in: query
+          name: color
+          schema:
+            type: string
+          description: Color to filter products by (optional)
         - in: query
           name: minPrice
           schema:

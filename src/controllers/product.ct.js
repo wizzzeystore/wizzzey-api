@@ -15,6 +15,9 @@ export const getProducts = asyncHandler(async (req, res) => {
     minPrice,
     maxPrice,
     inStock,
+    brandId,
+    size,
+    color,
     product_ids,
     page = 1,
     limit = 10,
@@ -80,6 +83,9 @@ export const getProducts = asyncHandler(async (req, res) => {
     if (maxPrice) filter.price.$lte = Number(maxPrice);
   }
   if (inStock !== undefined) filter.inStock = inStock === 'true';
+  if (brandId && mongoose.Types.ObjectId.isValid(brandId)) filter.brandId = brandId;
+  if (size) filter.availableSizes = { $in: size.split(',') };
+  if (color) filter['colors.name'] = { $in: color.split(',') };
 
   // Calculate pagination
   const skip = (Number(page) - 1) * Number(limit);
@@ -115,7 +121,10 @@ export const getProducts = asyncHandler(async (req, res) => {
         minPrice,
         maxPrice,
         inStock,
-        product_ids
+        product_ids,
+        brandId,
+        size,
+        color
       }
     },
     sort: {
