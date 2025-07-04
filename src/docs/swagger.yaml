@@ -833,6 +833,12 @@ paths:
             type: integer
             default: 1
         - in: query
+          name: categoryId
+          schema:
+            type: string
+            format: uuid
+          description: ID of the category to filter products by
+        - in: query
           name: brandId
           schema:
             type: string
