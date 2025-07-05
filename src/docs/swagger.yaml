@@ -5,7 +5,7 @@ info:
   description: API documentation for the E-commerce platform
 
 servers:
-  - url: http://localhost:3000/api
+  - url: http://localhost:5000/api
     description: Development server
 
 components:
@@ -3327,3 +3327,149 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponse' 
+
+  /app-settings:
+    get:
+      summary: Get app settings
+      description: Retrieve paginated app settings (public)
+      tags: [AppSettings]
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10 }
+        - in: query
+          name: sortBy
+          schema: { type: string, default: createdAt }
+        - in: query
+          name: sortOrder
+          schema: { type: string, enum: [asc, desc], default: desc }
+      responses:
+        200:
+          description: App settings retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  data:
+                    type: object
+                    properties:
+                      settings:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AppSettings'
+
+    post:
+      summary: Create app settings
+      description: Create new app settings (admin only)
+      tags: [AppSettings]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppSettings'
+      responses:
+        201:
+          description: Settings created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  data:
+                    type: object
+                    properties:
+                      settings:
+                        $ref: '#/components/schemas/AppSettings'
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+  
+    put:
+      summary: Update app settings
+      description: Update app settings (admin only)
+      tags: [AppSettings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema:
+            type: string
+          description: MongoDB ObjectId of the settings document to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppSettings'
+      responses:
+        200:
+          description: App settings updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: { type: string }
+                  data:
+                    type: object
+                    properties:
+                      settings:
+                        $ref: '#/components/schemas/AppSettings'
+        400:
+          description: Invalid input
+        401:
+          description: Unauthorized
+        403:
+          description: Forbidden
+
+    delete:
+      summary: Delete app settings
+      description: Delete app settings by ID (admin only)
+      tags: [AppSettings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        200:
+          description: Settings deleted
+        400:
+          description: Invalid ID
+        404:
+          description: Not found
+
+    /generate-api-key:
+      post:
+        summary: Generate new API key
+        description: Generates and stores a new API key (admin only)
+        tags: [AppSettings]
+        security:
+          - bearerAuth: []
+        responses:
+          200:
+            description: API key generated successfully
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    message: { type: string }
+                    data:
+                      type: object
+                      properties:
+                        apiKey: { type: string }
