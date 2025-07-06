@@ -60,10 +60,13 @@ const createImageObject = (file, baseUrl) => {
 // Helper function to delete old image file
 const deleteOldImage = async (imageObject) => {
   if (imageObject && imageObject.filename) {
-    const filePath = path.join('uploads', imageObject.filename);
+    const filePath = path.join(process.cwd(), 'uploads', imageObject.filename);
     try {
       if (fs.existsSync(filePath)) {
         await fs.promises.unlink(filePath);
+        console.log(`Successfully deleted file: ${filePath}`);
+      } else {
+        console.warn(`File not found: ${filePath}`);
       }
     } catch (error) {
       console.warn(`Could not delete old image file: ${error.message}`);
@@ -176,7 +179,7 @@ export const deleteStoreLogo = asyncHandler(async (req, res) => {
   
   if (settings.storeLogo) {
     await deleteOldImage(settings.storeLogo);
-    settings.storeLogo = undefined;
+    settings.storeLogo = null;
     await settings.save();
   }
 
@@ -185,15 +188,24 @@ export const deleteStoreLogo = asyncHandler(async (req, res) => {
 
 // Delete hero image
 export const deleteHeroImage = asyncHandler(async (req, res) => {
-  const settings = await getOrCreateSettings();
-  
-  if (settings.heroImage) {
-    await deleteOldImage(settings.heroImage);
-    settings.heroImage = undefined;
-    await settings.save();
-  }
+  try {
+    const settings = await getOrCreateSettings();
+    
+    if (settings.heroImage) {
+      console.log('Deleting hero image:', settings.heroImage);
+      await deleteOldImage(settings.heroImage);
+      settings.heroImage = null;
+      await settings.save();
+      console.log('Hero image deleted from database');
+    } else {
+      console.log('No hero image found to delete');
+    }
 
-  return ApiResponse.success(res, 'Hero image deleted successfully');
+    return ApiResponse.success(res, 'Hero image deleted successfully');
+  } catch (error) {
+    console.error('Error deleting hero image:', error);
+    throw error;
+  }
 });
 
 // Delete app settings

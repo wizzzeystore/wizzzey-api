@@ -27,8 +27,8 @@ const AppSettingsSchema = new Schema(
       darkMode: { type: Boolean, default: false },
       themeAccentColor: { type: String, default: 'var(--accent)' },
       storeLogoUrl: { type: String, default: '' },
-      storeLogo: { type: ImageSchema },
-      heroImage: { type: ImageSchema },
+      storeLogo: { type: ImageSchema, default: null },
+      heroImage: { type: ImageSchema, default: null },
       notifications: { type: NotificationsSchema, default: {} },
       apiSettings: { type: ApiSettingsSchema, default: {} }
   },

@@ -21,13 +21,15 @@ router.get('/', getAppSettings);
 // Protected routes (admin only)
 router.post('/', verifyToken, authorize('Admin'), createAppSettings);
 router.put('/', verifyToken, authorize('Admin'), updateAppSettings);
-router.delete('/:id', verifyToken, authorize('Admin'), deleteAppSettings);
 router.post('/generate-api-key', verifyToken, authorize('Admin'), generateApiKey);
 
-// File upload routes (admin only)
+// File upload routes (admin only) - these must come before parameter routes
 router.post('/upload/logo', verifyToken, authorize('Admin'), upload.single('logo'), uploadStoreLogo);
 router.post('/upload/hero', verifyToken, authorize('Admin'), upload.single('hero'), uploadHeroImage);
 router.delete('/logo', verifyToken, authorize('Admin'), deleteStoreLogo);
 router.delete('/hero', verifyToken, authorize('Admin'), deleteHeroImage);
+
+// Parameter routes (must come after specific routes)
+router.delete('/:id', verifyToken, authorize('Admin'), deleteAppSettings);
 
 export default router; 
