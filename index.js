@@ -9,6 +9,7 @@ import logger from './src/utils/logger.ut.js';
 import requestLogger from './src/middleware/requestLogger.mw.js';
 import errorLogger from './src/middleware/errorLogger.mw.js';
 import connectDB from './src/config/db.js';
+import cleanupService from './src/services/cleanupService.js';
 // Get current directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,6 +67,7 @@ import faqRoutes from './src/routes/faq.rt.js';
 import notificationRoutes from './src/routes/notification.rt.js';
 import appSettingsRoutes from './src/routes/appSettings.rt.js';
 import activityLogRoutes from './src/routes/activityLog.rt.js';
+import cleanupRoutes from './src/routes/cleanup.rt.js';
 
 // Use routes
 // Authentication and User Management
@@ -93,6 +95,7 @@ app.use('/api/faqs', faqRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/app-settings', appSettingsRoutes);
 app.use('/api/activity-logs', activityLogRoutes);
+app.use('/api/cleanup', cleanupRoutes);
 
 // Error logging middleware
 app.use(errorLogger);
@@ -141,11 +144,15 @@ const startServer = async () => {
     // Connect to MongoDB
     await connectDB();
 
+    // Start cleanup service scheduler
+    cleanupService.startScheduler();
+
     // Start server
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
       logger.info(`Server is running on port ${PORT}`);
       logger.info(`API Documentation available at http://localhost:${PORT}/api-docs`);
+      logger.info('Cleanup service scheduler started - will run daily at 12:00 AM IST');
     });
   } catch (error) {
     logger.error('Failed to start server:', error);
@@ -155,3 +162,16 @@ const startServer = async () => {
 
 // Start the server
 startServer();
+
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+  logger.info('SIGTERM received, shutting down gracefully...');
+  cleanupService.stopScheduler();
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  logger.info('SIGINT received, shutting down gracefully...');
+  cleanupService.stopScheduler();
+  process.exit(0);
+});
