@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
-    "test-cleanup": "node test-cleanup.js"
+    "test-cleanup": "node test-cleanup.js",
+    "migrate-admin": "node migrate-admin-permissions.js"
   },
   "author": "Google LLC",
   "license": "Apache-2.0",

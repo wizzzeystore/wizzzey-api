@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import bcrypt from 'bcrypt';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
@@ -11,8 +10,8 @@ const __dirname = path.dirname(__filename);
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-// Define User Schema (matching User.mo.js)
-const userSchema = new mongoose.Schema({
+// Define User Schema (same as in User.mo.js)
+const UserSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
@@ -106,57 +105,52 @@ const userSchema = new mongoose.Schema({
 });
 
 // Create User model
-const User = mongoose.models.User || mongoose.model('User', userSchema);
+const User = mongoose.models.User || mongoose.model('User', UserSchema);
 
-// Admin permissions object
-const ADMIN_PERMISSIONS = {
-  canManageUsers: true,
-  canManageProducts: true,
-  canManageOrders: true,
-  canManageInventory: true,
-  canManageBrands: true,
-  canViewAnalytics: true
-};
-
-async function createAdminUser(email, password) {
+async function migrateAdminPermissions() {
   try {
     // Connect to MongoDB
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('Connected to MongoDB');
 
-    // Check if admin user already exists
-    const existingAdmin = await User.findOne({ email });
-    if (existingAdmin) {
-      console.log('Admin user already exists with this email');
-      process.exit(0);
+    // Find all admin users
+    const adminUsers = await User.find({ role: 'Admin' });
+    console.log(`Found ${adminUsers.length} admin users to migrate`);
+
+    if (adminUsers.length === 0) {
+      console.log('No admin users found to migrate');
+      return;
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    // Update each admin user with proper permissions
+    for (const user of adminUsers) {
+      console.log(`Migrating admin user: ${user.email}`);
+      
+      // Set all admin permissions to true
+      const updatedPermissions = {
+        canManageUsers: true,
+        canManageProducts: true,
+        canManageOrders: true,
+        canManageInventory: true,
+        canManageBrands: true,
+        canViewAnalytics: true
+      };
 
-    // Create admin user with all permissions
-    const adminUser = new User({
-      name: 'Admin',
-      email,
-      password: hashedPassword,
-      role: 'Admin',
-      permissions: ADMIN_PERMISSIONS,
-      isActive: true
-    });
+      // Update the user with new permissions
+      await User.findByIdAndUpdate(user._id, {
+        $set: {
+          permissions: updatedPermissions
+        }
+      }, { new: true });
 
-    await adminUser.save();
-    console.log('Admin user created successfully');
-    console.log('Email:', email);
-    console.log('Role: Admin');
-    console.log('Permissions: All admin permissions granted');
-    console.log('Permissions granted:');
-    Object.entries(ADMIN_PERMISSIONS).forEach(([permission, value]) => {
-      console.log(`  - ${permission}: ${value}`);
-    });
+      console.log(`✅ Successfully migrated admin user: ${user.email}`);
+    }
+
+    console.log('\n🎉 Migration completed successfully!');
+    console.log(`Updated ${adminUsers.length} admin users with proper permissions`);
 
   } catch (error) {
-    console.error('Error creating admin user:', error);
+    console.error('❌ Error during migration:', error);
   } finally {
     // Close MongoDB connection
     await mongoose.connection.close();
@@ -164,27 +158,5 @@ async function createAdminUser(email, password) {
   }
 }
 
-// Get command line arguments
-const args = process.argv.slice(2);
-if (args.length !== 2) {
-  console.log('Usage: node create-admin.js <email> <password>');
-  process.exit(1);
-}
-
-const [email, password] = args;
-
-// Validate email format
-const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
-if (!emailRegex.test(email)) {
-  console.error('Invalid email format');
-  process.exit(1);
-}
-
-// Validate password length
-if (password.length < 6) {
-  console.error('Password must be at least 6 characters long');
-  process.exit(1);
-}
-
-// Create admin user
-createAdminUser(email, password); 
+// Run the migration
+migrateAdminPermissions(); 
