@@ -50,6 +50,8 @@ import productRoutes from './src/routes/product.rt.js';
 import categoryRoutes from './src/routes/category.rt.js';
 import brandRoutes from './src/routes/brand.rt.js';
 import inventoryRoutes from './src/routes/inventory.rt.js';
+import softInventoryRoutes from './src/routes/softInventory.rt.js';
+import hardInventoryRoutes from './src/routes/hardInventory.rt.js';
 
 // Order and Sales
 import orderRoutes from './src/routes/order.rt.js';
@@ -75,6 +77,8 @@ app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/brands', brandRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/soft-inventory', softInventoryRoutes);
+app.use('/api/hard-inventory', hardInventoryRoutes);
 
 // Order and Sales
 app.use('/api/orders', orderRoutes);
