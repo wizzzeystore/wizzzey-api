@@ -12,16 +12,24 @@ export const verifyToken = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    // Get user
-    const user = await UserModel.findById(decoded.userId);
+    // Get user with populated assignedBrand
+    const user = await UserModel.findById(decoded.userId).populate('assignedBrand', 'name slug');
     if (!user) {
       throw new ApiError(401, 'User not found');
+    }
+
+    if (!user.isActive) {
+      throw new ApiError(401, 'User account is deactivated');
     }
 
     // Add user info to request
     req.user = {
       id: user._id,
-      role: user.role
+      role: user.role,
+      permissions: user.permissions,
+      assignedBrand: user.assignedBrand,
+      email: user.email,
+      name: user.name
     };
     
     next();
@@ -36,7 +44,7 @@ export const verifyToken = async (req, res, next) => {
   }
 };
 
-export const authorize = (role) => {
+export const authorize = (roles) => {
   return async (req, res, next) => {
     try {
       if (!req.user) {
@@ -47,10 +55,13 @@ export const authorize = (role) => {
         });
       }
 
-      if (req.user.role !== role) {
+      // Convert single role to array for consistency
+      const allowedRoles = Array.isArray(roles) ? roles : [roles];
+      
+      if (!allowedRoles.includes(req.user.role)) {
         return res.status(403).json({
           type: 'ERROR',
-          message: `${role} access required`,
+          message: `${allowedRoles.join(' or ')} access required`,
           data: null
         });
       }
@@ -63,5 +74,98 @@ export const authorize = (role) => {
         data: null
       });
     }
+  }
+};
+
+// Middleware to check specific permissions
+export const requirePermission = (permission) => {
+  return async (req, res, next) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({
+          type: 'ERROR',
+          message: 'Authentication required',
+          data: null
+        });
+      }
+
+      if (!req.user.permissions[permission]) {
+        return res.status(403).json({
+          type: 'ERROR',
+          message: `Permission '${permission}' required`,
+          data: null
+        });
+      }
+
+      next();
+    } catch (error) {
+      return res.status(500).json({
+        type: 'ERROR',
+        message: 'Server error',
+        data: null
+      });
+    }
+  }
+};
+
+// Middleware to check brand access for BrandPartner role
+export const requireBrandAccess = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        type: 'ERROR',
+        message: 'Authentication required',
+        data: null
+      });
+    }
+
+    // Admin and Moderator can access all brands
+    if (req.user.role === 'Admin' || req.user.role === 'Moderator') {
+      return next();
+    }
+
+    // BrandPartner can only access their assigned brand
+    if (req.user.role === 'BrandPartner') {
+      const brandId = req.params.brandId || req.body.brandId || req.query.brandId;
+      
+      if (!brandId) {
+        return res.status(400).json({
+          type: 'ERROR',
+          message: 'Brand ID required',
+          data: null
+        });
+      }
+
+      if (!req.user.assignedBrand || req.user.assignedBrand._id.toString() !== brandId.toString()) {
+        return res.status(403).json({
+          type: 'ERROR',
+          message: 'Access denied to this brand',
+          data: null
+        });
+      }
+    }
+
+    next();
+  } catch (error) {
+    return res.status(500).json({
+      type: 'ERROR',
+      message: 'Server error',
+      data: null
+    });
+  }
+};
+
+// Middleware to update last login
+export const updateLastLogin = async (req, res, next) => {
+  try {
+    if (req.user && req.user.id) {
+      await UserModel.findByIdAndUpdate(req.user.id, { 
+        lastLogin: new Date() 
+      });
+    }
+    next();
+  } catch (error) {
+    // Don't block the request if last login update fails
+    next();
   }
 };

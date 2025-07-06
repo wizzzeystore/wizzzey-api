@@ -9,7 +9,8 @@ const generateToken = (user) => {
   return jwt.sign(
     { 
       userId: user._id,
-      role: user.role 
+      role: user.role,
+      assignedBrand: user.assignedBrand
     },
     process.env.JWT_SECRET,
     { expiresIn: '24h' }
@@ -69,215 +70,232 @@ export const register = asyncHandler(async (req, res) => {
   }, 201);
 });
 
-export const login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+export const login = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
 
-    if (!email || !password) {
-      return ApiResponse.error(res, 'Email and password are required', 400);
-    }
+  if (!email || !password) {
+    throw new ApiError(400, 'Email and password are required');
+  }
 
-    // Find user and include password
-    const user = await UserModel.findOne({ email: email.toString() }).select('+password');
-    if (!user) {
-      return ApiResponse.unauthorized(res, 'Invalid credentials');
-    }
+  // Find user and include password
+  const user = await UserModel.findOne({ email: email.toString() })
+    .select('+password')
+    .populate('assignedBrand', 'name slug');
+    
+  if (!user) {
+    throw new ApiError(401, 'Invalid credentials');
+  }
 
-    // Check if user is active
-    if (!user.isActive) {
-      return ApiResponse.unauthorized(res, 'Account is inactive');
-    }
+  // Check if user is active
+  if (!user.isActive) {
+    throw new ApiError(401, 'Account is inactive');
+  }
 
-    // Verify password
-    const isPasswordValid = await user.comparePassword(password);
-    if (!isPasswordValid) {
-      return ApiResponse.unauthorized(res, 'Invalid credentials');
-    }
+  // Verify password
+  const isPasswordValid = await user.comparePassword(password);
+  if (!isPasswordValid) {
+    throw new ApiError(401, 'Invalid credentials');
+  }
 
-    // Update last login
-    user.lastLogin = new Date();
-    await user.save();
+  // Update last login
+  user.lastLogin = new Date();
+  await user.save();
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+  // Generate JWT token
+  const token = generateToken(user);
+
+  // Remove password from user object
+  const userResponse = user.toJSON();
+  delete userResponse.password;
+
+  // Determine redirect URL based on role
+  let redirectUrl = '/dashboard';
+  
+  if (user.role === 'BrandPartner' && user.assignedBrand) {
+    redirectUrl = `/brands/${user.assignedBrand.slug}/orders`;
+  } else if (user.role === 'Admin') {
+    redirectUrl = '/admin/dashboard';
+  } else if (user.role === 'Moderator') {
+    redirectUrl = '/moderator/dashboard';
+  } else if (user.role === 'Customer') {
+    redirectUrl = '/profile';
+  }
+
+  return ApiResponse.success(res, 'Login successful', {
+    user: userResponse,
+    token,
+    redirectUrl
+  });
+});
+
+export const verifyEmail = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+
+  const user = await UserModel.findOne({
+    verificationToken: token,
+    verificationTokenExpires: { $gt: Date.now() },
+    isVerified: false
+  });
+
+  if (!user) {
+    throw new ApiError(400, 'Invalid or expired verification token');
+  }
+
+  user.isVerified = true;
+  user.verificationToken = undefined;
+  user.verificationTokenExpires = undefined;
+  await user.save();
+
+  return ApiResponse.success(res, 'Email verified successfully');
+});
+
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  const user = await UserModel.findOne({ email });
+  if (!user) {
+    throw new ApiError(404, 'No account found with this email');
+  }
+
+  // Generate reset token
+  const resetToken = user.generatePasswordResetToken();
+  await user.save();
+
+  // TODO: Send reset password email
+  console.log(`Password reset email would be sent to ${email} with token ${resetToken}`);
+
+  return ApiResponse.success(res, 'Password reset instructions sent to your email');
+});
+
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const { password } = req.body;
+
+  const user = await UserModel.findOne({
+    resetPasswordToken: token,
+    resetPasswordExpires: { $gt: Date.now() }
+  });
+
+  if (!user) {
+    throw new ApiError(400, 'Invalid or expired reset token');
+  }
+
+  // Update password
+  user.password = password;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpires = undefined;
+  await user.save();
+
+  return ApiResponse.success(res, 'Password reset successful');
+});
+
+export const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const user = await UserModel.findById(req.user.id).select('+password');
+
+  // Verify current password
+  const isCurrentPasswordValid = await user.comparePassword(currentPassword);
+  if (!isCurrentPasswordValid) {
+    throw new ApiError(400, 'Current password is incorrect');
+  }
+
+  // Update password
+  user.password = newPassword;
+  await user.save();
+
+  return ApiResponse.success(res, 'Password changed successfully');
+});
+
+export const getProfile = asyncHandler(async (req, res) => {
+  const user = await UserModel.findById(req.user.id)
+    .select('-password')
+    .populate('assignedBrand', 'name slug');
+
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+
+  return ApiResponse.success(res, 'Profile retrieved successfully', { user });
+});
+
+export const updateProfile = asyncHandler(async (req, res) => {
+  const { name, phone, shippingAddress, billingAddress } = req.body;
+
+  const user = await UserModel.findById(req.user.id);
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+
+  // Update allowed fields
+  if (name) user.name = name;
+  if (phone) user.phone = phone;
+  if (shippingAddress) user.shippingAddress = shippingAddress;
+  if (billingAddress) user.billingAddress = billingAddress;
+
+  await user.save();
+
+  const updatedUser = await UserModel.findById(req.user.id)
+    .select('-password')
+    .populate('assignedBrand', 'name slug');
+
+  return ApiResponse.success(res, 'Profile updated successfully', { user: updatedUser });
+});
+
+// Get current user's permissions and access info
+export const getCurrentUserInfo = asyncHandler(async (req, res) => {
+  const user = await UserModel.findById(req.user.id)
+    .select('-password')
+    .populate('assignedBrand', 'name slug');
+
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+
+  // Determine available routes based on role and permissions
+  const availableRoutes = [];
+  
+  if (user.role === 'Admin') {
+    availableRoutes.push(
+      '/admin/dashboard',
+      '/admin/users',
+      '/admin/products',
+      '/admin/orders',
+      '/admin/inventory',
+      '/admin/brands',
+      '/admin/analytics'
     );
-
-    // Remove password from user object
-    const userResponse = user.toJSON();
-    delete userResponse.password;
-
-    return ApiResponse.success(res, 'Login successful', {
-      user: userResponse,
-      token
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    return ApiResponse.error(res, 'Login failed');
+  } else if (user.role === 'Moderator') {
+    availableRoutes.push(
+      '/moderator/dashboard',
+      '/moderator/products',
+      '/moderator/orders',
+      '/moderator/inventory',
+      '/moderator/analytics'
+    );
+  } else if (user.role === 'BrandPartner' && user.assignedBrand) {
+    availableRoutes.push(
+      `/brands/${user.assignedBrand.slug}/orders`,
+      `/brands/${user.assignedBrand.slug}/out-of-stock`,
+      `/brands/${user.assignedBrand.slug}/order-placed`
+    );
+  } else if (user.role === 'Customer') {
+    availableRoutes.push(
+      '/profile',
+      '/orders',
+      '/cart'
+    );
   }
-};
 
-export const verifyEmail = async (req, res) => {
-  try {
-    const { token } = req.params;
+  return ApiResponse.success(res, 'User info retrieved successfully', {
+    user,
+    availableRoutes,
+    permissions: user.permissions
+  });
+});
 
-    const user = await UserModel.findOne({
-      emailVerificationToken: token,
-      emailVerified: false
-    });
-
-    if (!user) {
-      return ApiResponse.error(res, 'Invalid or expired verification token', 400);
-    }
-
-    user.emailVerified = true;
-    user.emailVerificationToken = undefined;
-    await user.save();
-
-    return ApiResponse.success(res, 'Email verified successfully');
-  } catch (error) {
-    console.error('Email verification error:', error);
-    return ApiResponse.error(res, 'Email verification failed');
-  }
-};
-
-export const forgotPassword = async (req, res) => {
-  try {
-    const { email } = req.body;
-
-    const user = await UserModel.findOne({ email });
-    if (!user) {
-      return ApiResponse.error(res, 'No account found with this email', 404);
-    }
-
-    // Generate reset token
-    const resetToken = user.generatePasswordResetToken();
-    await user.save();
-
-    // TODO: Send reset password email
-
-    return ApiResponse.success(res, 'Password reset instructions sent to your email');
-  } catch (error) {
-    console.error('Forgot password error:', error);
-    return ApiResponse.error(res, 'Failed to process password reset request');
-  }
-};
-
-export const resetPassword = async (req, res) => {
-  try {
-    const { token } = req.params;
-    const { password } = req.body;
-
-    const user = await UserModel.findOne({
-      resetPasswordToken: token,
-      resetPasswordExpire: { $gt: Date.now() }
-    });
-
-    if (!user) {
-      return ApiResponse.error(res, 'Invalid or expired reset token', 400);
-    }
-
-    // Update password
-    user.password = password;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpire = undefined;
-    await user.save();
-
-    return ApiResponse.success(res, 'Password reset successful');
-  } catch (error) {
-    console.error('Reset password error:', error);
-    return ApiResponse.error(res, 'Password reset failed');
-  }
-};
-
-export const changePassword = async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-    const user = await UserModel.findById(req.user.id).select('+password');
-
-    // Verify current password
-    const isPasswordValid = await user.comparePassword(currentPassword);
-    if (!isPasswordValid) {
-      return ApiResponse.unauthorized(res, 'Current password is incorrect');
-    }
-
-    // Update password
-    user.password = newPassword;
-    await user.save();
-
-    return ApiResponse.success(res, 'Password changed successfully');
-  } catch (error) {
-    console.error('Change password error:', error);
-    return ApiResponse.error(res, 'Password change failed');
-  }
-};
-
-export const getProfile = async (req, res) => {
-  try {
-    const user = await UserModel.findById(req.user.id);
-    return ApiResponse.success(res, 'Profile retrieved successfully', {
-      user: user.toJSON()
-    });
-  } catch (error) {
-    console.error('Get profile error:', error);
-    return ApiResponse.error(res, 'Failed to retrieve profile');
-  }
-};
-
-export const updateProfile = async (req, res) => {
-  try {
-    const {billingAddress, shippingAddress, phone, name, email} = req.body;
-    const user = await UserModel.findById(req.user.id);
-
-    // Check if email is already taken
-    if (email && email !== user.email) {
-      const existingUser = await UserModel.findOne({ email });
-      if (existingUser) {
-        return ApiResponse.error(res, 'Email already taken', 400);
-      }
-      user.email = email;
-      user.emailVerified = false;
-      const verificationToken = user.generateEmailVerificationToken();
-      // TODO: Send verification email
-    }
-
-    if (name) {
-      user.name = name;
-    }
-
-    if (phone) {
-      user.phone = phone;
-    }
-
-    if (shippingAddress) {
-      user.shippingAddress = {
-        city: shippingAddress.city,
-        state: shippingAddress.state,
-        street: shippingAddress.street,
-        zip: shippingAddress.zip,
-        country: shippingAddress.country
-      };
-    }
-
-    if (billingAddress) {
-      user.billingAddress = {
-        city: billingAddress.city,
-        state: billingAddress.state,
-        street: billingAddress.street,
-        zip: billingAddress.zip,
-        country: billingAddress.country
-      };
-    }
-
-    await user.save();
-
-    return ApiResponse.success(res, 'Profile updated successfully', {
-      user: user.toJSON()
-    });
-  } catch (error) {
-    console.error('Update profile error:', error);
-    return ApiResponse.error(res, 'Profile update failed');
-  }
-};
+// Logout (client-side token removal)
+export const logout = asyncHandler(async (req, res) => {
+  // In a more sophisticated setup, you might want to blacklist the token
+  // For now, we'll just return a success response
+  return ApiResponse.success(res, 'Logout successful');
+});
