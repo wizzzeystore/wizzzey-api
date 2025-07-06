@@ -54,7 +54,7 @@ const createImageObject = (file, baseUrl) => {
     originalName: file.originalname,
     mimetype: file.mimetype,
     size: file.size,
-    url: `${baseUrl}/uploads/${file.filename}`
+    url: `/uploads/${file.filename}`
   };
 };
 
