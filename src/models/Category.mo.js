@@ -1,6 +1,14 @@
 // src/models/Category.js
 import mongoose, { Schema } from 'mongoose';
 
+const ImageSchema = new Schema({
+  filename: { type: String, required: true },
+  originalName: { type: String, required: true },
+  mimetype: { type: String, required: true },
+  size: { type: Number, required: true },
+  url: { type: String, required: true },
+}, { _id: false });
+
 const CategorySchema = new Schema(
   {
     name: { 
@@ -45,6 +53,7 @@ const CategorySchema = new Schema(
         message: 'Image URL must be a valid URL'
       }
     },
+    image: { type: ImageSchema },
     media: [{
       url: { type: String, required: true },
       type: { type: String, enum: ['image', 'video'], default: 'image' },

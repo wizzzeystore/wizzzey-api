@@ -11,6 +11,14 @@ const ApiSettingsSchema = new Schema({
   apiKeyLastGenerated: { type: Date },
 }, { _id: false });
 
+const ImageSchema = new Schema({
+  filename: { type: String, required: true },
+  originalName: { type: String, required: true },
+  mimetype: { type: String, required: true },
+  size: { type: Number, required: true },
+  url: { type: String, required: true },
+}, { _id: false });
+
 const AppSettingsSchema = new Schema(
   {
       storeName: { type: String, required: true },
@@ -19,6 +27,8 @@ const AppSettingsSchema = new Schema(
       darkMode: { type: Boolean, default: false },
       themeAccentColor: { type: String, default: 'var(--accent)' },
       storeLogoUrl: { type: String, default: '' },
+      storeLogo: { type: ImageSchema },
+      heroImage: { type: ImageSchema },
       notifications: { type: NotificationsSchema, default: {} },
       apiSettings: { type: ApiSettingsSchema, default: {} }
   },

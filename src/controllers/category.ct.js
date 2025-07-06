@@ -1,6 +1,59 @@
 import { Category } from '../models/Category.mo.js';
 import mongoose from 'mongoose';
 import { ApiResponse, asyncHandler, ApiError } from '../utils/responseHandler.ut.js';
+import path from 'path';
+import fs from 'fs';
+
+// Validation function for image files
+const validateImageFile = (file) => {
+  if (!file) {
+    return null; // No file uploaded is valid
+  }
+
+  const allowedMimeTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+  const allowedExtensions = ['.png', '.jpg', '.jpeg'];
+  
+  const fileExtension = path.extname(file.originalname).toLowerCase();
+  const isValidMimeType = allowedMimeTypes.includes(file.mimetype);
+  const isValidExtension = allowedExtensions.includes(fileExtension);
+  
+  if (!isValidMimeType || !isValidExtension) {
+    throw new ApiError(400, 'Only PNG and JPEG images are allowed');
+  }
+
+  // Check file size (max 5MB)
+  const maxSize = 5 * 1024 * 1024; // 5MB
+  if (file.size > maxSize) {
+    throw new ApiError(400, 'File size must be less than 5MB');
+  }
+
+  return true;
+};
+
+// Helper function to create image object
+const createImageObject = (file, baseUrl) => {
+  return {
+    filename: file.filename,
+    originalName: file.originalname,
+    mimetype: file.mimetype,
+    size: file.size,
+    url: `${baseUrl}/uploads/${file.filename}`
+  };
+};
+
+// Helper function to delete old image file
+const deleteOldImage = async (imageObject) => {
+  if (imageObject && imageObject.filename) {
+    const filePath = path.join('uploads', imageObject.filename);
+    try {
+      if (fs.existsSync(filePath)) {
+        await fs.promises.unlink(filePath);
+      }
+    } catch (error) {
+      console.warn(`Could not delete old image file: ${error.message}`);
+    }
+  }
+};
 
 // Get all categories with filters
 export const getCategories = asyncHandler(async (req, res) => {
@@ -93,20 +146,21 @@ export const createCategory = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Invalid parent category ID');
   }
   
-  // Get the file path from the uploaded file
-  let imageUrl = null;
+  // Handle image upload
+  let image = null;
   if (req.files && req.files.length > 0) {
-    const filePath = req.files[0].path;
-    imageUrl = filePath.split('uploads')[1].replace(/\\/g, '/');
-    imageUrl = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
-    imageUrl = `/uploads${imageUrl}`;
+    const file = req.files[0];
+    validateImageFile(file);
+    
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    image = createImageObject(file, baseUrl);
   }
   
   const category = new Category({
     name,
     description,
     parentId,
-    imageUrl,
+    image,
     slug,
     media: media || [],
     icon,
@@ -128,30 +182,55 @@ export const updateCategory = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Invalid category ID');
   }
 
-  const updatedCategory = await Category.findByIdAndUpdate(
-    id,
-    req.body,
-    { new: true }
-  );
-
-  if (!updatedCategory) {
+  // Find existing category to handle image deletion
+  const existingCategory = await Category.findById(id);
+  if (!existingCategory) {
     throw new ApiError(404, 'Category not found');
   }
+
+  // Handle image upload
+  let image = existingCategory.image;
+  if (req.files && req.files.length > 0) {
+    const file = req.files[0];
+    validateImageFile(file);
+    
+    // Delete old image if exists
+    if (existingCategory.image) {
+      await deleteOldImage(existingCategory.image);
+    }
+    
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    image = createImageObject(file, baseUrl);
+  }
+
+  // Update category with new image
+  const updateData = { ...req.body, image };
+  const updatedCategory = await Category.findByIdAndUpdate(
+    id,
+    updateData,
+    { new: true }
+  );
 
   return ApiResponse.success(res, 'Category updated successfully', { category: updatedCategory });
 });
 
 // Delete a category
-export const  deleteCategory = asyncHandler(async (req, res) => {
+export const deleteCategory = asyncHandler(async (req, res) => {
   const { id } = req.query;
   if (!id || !mongoose.Types.ObjectId.isValid(id)) {
     throw new ApiError(400, 'Invalid category ID');
   }
 
-  const deletedCategory = await Category.findByIdAndDelete(id);
-  if (!deletedCategory) {
+  const category = await Category.findById(id);
+  if (!category) {
     throw new ApiError(404, 'Category not found');
   }
 
+  // Delete associated image file
+  if (category.image) {
+    await deleteOldImage(category.image);
+  }
+
+  const deletedCategory = await Category.findByIdAndDelete(id);
   return ApiResponse.success(res, 'Category deleted successfully');
 });
