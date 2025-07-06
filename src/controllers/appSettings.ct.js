@@ -1,5 +1,6 @@
 import AppSettingsModel from '../models/AppSettings.mo.js';
 import { ApiResponse, asyncHandler, ApiError } from '../utils/responseHandler.ut.js';
+import { getBaseUrl } from '../utils/helper.js';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 import path from 'path';
@@ -140,7 +141,7 @@ export const uploadStoreLogo = asyncHandler(async (req, res) => {
   }
 
   // Create new image object
-  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const baseUrl = getBaseUrl(req);
   settings.storeLogo = createImageObject(file, baseUrl);
   
   await settings.save();
@@ -163,7 +164,7 @@ export const uploadHeroImage = asyncHandler(async (req, res) => {
   }
 
   // Create new image object
-  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const baseUrl = getBaseUrl(req);
   settings.heroImage = createImageObject(file, baseUrl);
   
   await settings.save();

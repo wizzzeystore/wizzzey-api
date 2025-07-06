@@ -29,3 +29,53 @@ export function parsePossiblyStringifiedArray(value, onError) {
   }
   return parsed;
 }
+
+/**
+ * Get the correct protocol (http/https) from the request
+ * Handles cases where the app is behind a proxy
+ * @param {Object} req - Express request object
+ * @returns {string} - 'http' or 'https'
+ */
+export const getProtocol = (req) => {
+  // Check for forwarded protocol headers (common with proxies)
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  if (forwardedProto) {
+    return forwardedProto.split(',')[0].trim();
+  }
+  
+  // Check for other common proxy headers
+  const forwardedProtocol = req.headers['x-forwarded-protocol'];
+  if (forwardedProtocol) {
+    return forwardedProtocol.split(',')[0].trim();
+  }
+  
+  // Check for Cloudflare headers
+  const cfVisitingScheme = req.headers['cf-visitor'];
+  if (cfVisitingScheme) {
+    try {
+      const cfVisitor = JSON.parse(cfVisitingScheme);
+      return cfVisitor.scheme || req.protocol;
+    } catch (e) {
+      // If parsing fails, fall back to req.protocol
+    }
+  }
+  
+  // Check for secure connection
+  if (req.secure) {
+    return 'https';
+  }
+  
+  // Fall back to req.protocol
+  return req.protocol;
+};
+
+/**
+ * Get the complete base URL with correct protocol
+ * @param {Object} req - Express request object
+ * @returns {string} - Complete base URL (e.g., 'https://example.com')
+ */
+export const getBaseUrl = (req) => {
+  const protocol = getProtocol(req);
+  const host = req.get('host');
+  return `${protocol}://${host}`;
+};

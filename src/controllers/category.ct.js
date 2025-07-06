@@ -1,6 +1,7 @@
 import { Category } from '../models/Category.mo.js';
 import mongoose from 'mongoose';
 import { ApiResponse, asyncHandler, ApiError } from '../utils/responseHandler.ut.js';
+import { getBaseUrl } from '../utils/helper.js';
 import path from 'path';
 import fs from 'fs';
 
@@ -152,7 +153,7 @@ export const createCategory = asyncHandler(async (req, res) => {
     const file = req.files[0];
     validateImageFile(file);
     
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const baseUrl = getBaseUrl(req);
     image = createImageObject(file, baseUrl);
   }
   
@@ -199,7 +200,7 @@ export const updateCategory = asyncHandler(async (req, res) => {
       await deleteOldImage(existingCategory.image);
     }
     
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const baseUrl = getBaseUrl(req);
     image = createImageObject(file, baseUrl);
   }
 
