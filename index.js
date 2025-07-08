@@ -28,8 +28,12 @@ process.setMaxListeners(20);
 
 // Middleware
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// For JSON requests (limit increased)
+app.use(express.json({ limit: '50mb' }));
+
+// For urlencoded form data (not used in your file upload, but still safe to increase)
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
 
 // Request logging middleware
 app.use(requestLogger);
