@@ -14,9 +14,12 @@ const CustomerInfoSchema = new Schema({
 const OrderItemSchema = new Schema({
   productId: { type: String, required: true },
   productName: { type: String, required: true },
+  productImage: { type: String },
+  sku: { type: String },
   quantity: { type: Number, required: true },
   price: { type: Number, required: true },
   selectedSize: { type: String },
+  selectedColor: { type: String },
   brandId: { type: Schema.Types.ObjectId, ref: 'Brand', index: true },
 }, { _id: false });
 

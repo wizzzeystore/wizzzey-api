@@ -143,13 +143,18 @@ export const createOrder = asyncHandler(async (req, res) => {
   const { customerInfo, items, totalAmount, status, notes } = req.body;
   const files = req.files;
 
+  // Validate that each item includes productImage and selectedColor (optional, but recommended)
+  // items.forEach(item => {
+  //   if (!item.productImage) throw new ApiError(400, 'Each order item must include productImage');
+  // });
+
   // Create order with user ID
   const order = new Order({
     customerInfo: {
       ...customerInfo,
       customerId: req.user.id // Use user ID as customer ID
     },
-    items,
+    items, // productImage and selectedColor will be stored if present
     totalAmount,
     status: status || "Pending",
     notes,
