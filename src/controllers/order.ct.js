@@ -273,3 +273,52 @@ export const getOrderSummary = asyncHandler(async (req, res) => {
     }
   });
 });
+
+// Create a return/exchange request for an order item
+export const createReturnRequest = asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+  const { itemId, type, reason, quantity, exchangeForSize, exchangeForColor } = req.body;
+  if (!itemId || !type || !reason) {
+    return ApiResponse.error(res, 'Missing required fields for return/exchange request', 400);
+  }
+  const order = await Order.findById(orderId);
+  if (!order) return ApiResponse.error(res, 'Order not found', 404);
+  const newReturn = {
+    itemId,
+    type,
+    reason,
+    quantity: quantity || 1,
+    exchangeForSize,
+    exchangeForColor,
+    status: 'requested',
+    requestedAt: new Date(),
+  };
+  order.returns.push(newReturn);
+  await order.save();
+  return ApiResponse.success(res, 'Return/exchange request created', { returns: order.returns }, 201);
+});
+
+// List all return/exchange requests for an order
+export const getReturnRequests = asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+  const order = await Order.findById(orderId);
+  if (!order) return ApiResponse.error(res, 'Order not found', 404);
+  return ApiResponse.success(res, 'Return/exchange requests retrieved', { returns: order.returns });
+});
+
+// Update a return/exchange request (admin)
+export const updateReturnRequest = asyncHandler(async (req, res) => {
+  const { orderId, returnId } = req.params;
+  const { status, adminNotes } = req.body;
+  const order = await Order.findById(orderId);
+  if (!order) return ApiResponse.error(res, 'Order not found', 404);
+  const ret = order.returns.id(returnId);
+  if (!ret) return ApiResponse.error(res, 'Return/exchange request not found', 404);
+  if (status) ret.status = status;
+  if (adminNotes !== undefined) ret.adminNotes = adminNotes;
+  if (status === 'approved' || status === 'rejected' || status === 'completed') {
+    ret.processedAt = new Date();
+  }
+  await order.save();
+  return ApiResponse.success(res, 'Return/exchange request updated', { return: ret });
+});

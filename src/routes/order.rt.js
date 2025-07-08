@@ -25,4 +25,9 @@ router.put('/:id', verifyToken, orderController.updateOrder);
 // DELETE an order by ID
 router.delete('/:id', verifyToken, orderController.deleteOrder);
 
+// Return/Exchange request endpoints
+router.post('/:orderId/returns', verifyToken, orderController.createReturnRequest);
+router.get('/:orderId/returns', verifyToken, orderController.getReturnRequests);
+router.patch('/:orderId/returns/:returnId', verifyToken, orderController.updateReturnRequest);
+
 export default router;

@@ -23,6 +23,19 @@ const OrderItemSchema = new Schema({
   brandId: { type: Schema.Types.ObjectId, ref: 'Brand', index: true },
 }, { _id: false });
 
+const ReturnRequestSchema = new Schema({
+  itemId: { type: String, required: true }, // productId or unique item identifier
+  type: { type: String, enum: ['return', 'exchange'], required: true },
+  reason: { type: String, required: true },
+  status: { type: String, enum: ['requested', 'approved', 'rejected', 'completed'], default: 'requested' },
+  requestedAt: { type: Date, default: Date.now },
+  processedAt: { type: Date },
+  quantity: { type: Number, default: 1 },
+  exchangeForSize: { type: String },
+  exchangeForColor: { type: String },
+  adminNotes: { type: String },
+}, { _id: true });
+
 const OrderSchema = new Schema(
   {
     customerInfo: { type: CustomerInfoSchema, required: true },
@@ -33,6 +46,7 @@ const OrderSchema = new Schema(
     notes: { type: String },
     customerId: { type: Schema.Types.ObjectId, ref: 'Customer', index: true },
     media: [{ type: String }],
+    returns: [ReturnRequestSchema],
   },
   {
     timestamps: true,
