@@ -36,6 +36,12 @@ const ReturnRequestSchema = new Schema({
   adminNotes: { type: String },
 }, { _id: true });
 
+const StatusHistorySchema = new Schema({
+  status: { type: String, enum: ORDER_STATUSES, required: true },
+  changedAt: { type: Date, default: Date.now },
+  userId: { type: Schema.Types.ObjectId, ref: 'User' },
+}, { _id: false });
+
 const OrderSchema = new Schema(
   {
     customerInfo: { type: CustomerInfoSchema, required: true },
@@ -47,6 +53,7 @@ const OrderSchema = new Schema(
     customerId: { type: Schema.Types.ObjectId, ref: 'Customer', index: true },
     media: [{ type: String }],
     returns: [ReturnRequestSchema],
+    statusHistory: [StatusHistorySchema],
   },
   {
     timestamps: true,

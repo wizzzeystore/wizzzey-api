@@ -162,7 +162,12 @@ export const createOrder = asyncHandler(async (req, res) => {
       url: file.path,
       type: file.mimetype.startsWith('image/') ? 'image' : 'document',
       alt: file.originalname
-    })) : []
+    })) : [],
+    statusHistory: [{
+      status: status || "Pending",
+      changedAt: new Date(),
+      userId: req.user ? req.user._id : undefined
+    }]
   });
 
   await order.save();
@@ -185,17 +190,35 @@ export const updateOrder = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Invalid order ID');
   }
 
-  const updatedOrder = await Order.findByIdAndUpdate(
-    id,
-    req.body,
-    { new: true }
-  );
-
-  if (!updatedOrder) {
+  const order = await Order.findById(id);
+  if (!order) {
     throw new ApiError(404, 'Order not found');
   }
 
-  return ApiResponse.success(res, 'Order updated successfully', { order: updatedOrder });
+  const prevStatus = order.status;
+  const updates = req.body;
+
+  // If status is being updated and is different, push to statusHistory
+  if (updates.status && updates.status !== prevStatus) {
+    order.statusHistory = order.statusHistory || [];
+    order.statusHistory.push({
+      status: updates.status,
+      changedAt: new Date(),
+      userId: req.user ? req.user._id : undefined
+    });
+    order.status = updates.status;
+    // Remove status from updates so it doesn't get set again below
+    delete updates.status;
+  }
+
+  // Update other fields
+  Object.keys(updates).forEach(key => {
+    order[key] = updates[key];
+  });
+
+  await order.save();
+
+  return ApiResponse.success(res, 'Order updated successfully', { order });
 });
 
 // Delete an order by ID
