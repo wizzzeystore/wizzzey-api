@@ -313,25 +313,31 @@ export const updateProduct = asyncHandler(async (req, res) => {
 
   // Handle file uploads if present
   if (req.files && req.files.length > 0) {
-    // All files become media, first is also imageUrl
-    const mediaArr = [];
+    // Fetch current product to get existing media
+    const product = await Product.findById(id);
+    let existingMedia = product && Array.isArray(product.media) ? product.media : [];
+
+    // Prepare new media objects from uploaded files
+    const newMediaArr = [];
     for (let i = 0; i < req.files.length; i++) {
       const filePath = req.files[i].path;
       let mediaPath = filePath.split('uploads')[1];
       mediaPath = mediaPath.startsWith('/') ? mediaPath : `/${mediaPath}`;
-      mediaArr.push({ url: `uploads${mediaPath}`, type: 'image', alt: '' });
+      newMediaArr.push({ url: `uploads${mediaPath}`, type: 'image', alt: '' });
     }
-    // Deduplicate by url
+
+    // Combine existing and new media, then deduplicate by url
+    const combinedMedia = [...existingMedia, ...newMediaArr];
     const uniqueMediaArr = [];
     const seenUrls = new Set();
-    for (const img of mediaArr) {
+    for (const img of combinedMedia) {
       if (!seenUrls.has(img.url)) {
         uniqueMediaArr.push(img);
         seenUrls.add(img.url);
       }
     }
-    updates.imageUrl = uniqueMediaArr[0]?.url || '';
     updates.media = uniqueMediaArr;
+    updates.imageUrl = uniqueMediaArr[0]?.url || '';
   } else {
     // If no new files uploaded, do not overwrite media array
     if ('media' in updates) {
