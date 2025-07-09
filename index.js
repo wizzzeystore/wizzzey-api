@@ -67,6 +67,9 @@ import dashboardRoutes from './src/routes/dashboard.rt.js';
 import blogPostRoutes from './src/routes/blogPost.rt.js';
 import faqRoutes from './src/routes/faq.rt.js';
 
+// Size Chart Management
+import sizeChartRoutes from './src/routes/sizeChart.rt.js';
+
 // System Management
 import notificationRoutes from './src/routes/notification.rt.js';
 import appSettingsRoutes from './src/routes/appSettings.rt.js';
@@ -94,6 +97,9 @@ app.use('/api/dashboard', dashboardRoutes);
 // Content Management
 app.use('/api/blog-posts', blogPostRoutes);
 app.use('/api/faqs', faqRoutes);
+
+// Size Chart Management
+app.use('/api/size-charts', sizeChartRoutes);
 
 // System Management
 app.use('/api/notifications', notificationRoutes);

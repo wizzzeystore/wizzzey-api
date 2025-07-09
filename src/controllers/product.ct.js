@@ -221,7 +221,8 @@ export const createProduct = async (req, res) => {
       seo: parsedSeo,
       ratings: parsedRatings,
       imageUrl: uniqueMediaArr[0]?.url || '',
-      media: uniqueMediaArr
+      media: uniqueMediaArr,
+      sizeChart: (req.body.sizeChart && mongoose.Types.ObjectId.isValid(req.body.sizeChart)) ? req.body.sizeChart : null
     });
 
     await product.save();
@@ -360,6 +361,14 @@ export const updateProduct = asyncHandler(async (req, res) => {
       // Keep as is if it's already an array
     } else {
       updates.availableSizes = [updates.availableSizes];
+    }
+  }
+
+  if (updates.sizeChart) {
+    if (mongoose.Types.ObjectId.isValid(updates.sizeChart)) {
+      updates.sizeChart = updates.sizeChart;
+    } else {
+      updates.sizeChart = null;
     }
   }
 
