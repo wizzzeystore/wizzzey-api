@@ -186,6 +186,20 @@ export const createProduct = async (req, res) => {
       }
     }));
 
+    const mediaArr = compressedImages.map(image => ({
+      url: image,
+      type: 'image',
+      alt: ''
+    }));
+    const uniqueMediaArr = [];
+    const seenUrls = new Set();
+    for (const img of mediaArr) {
+      if (!seenUrls.has(img.url)) {
+        uniqueMediaArr.push(img);
+        seenUrls.add(img.url);
+      }
+    }
+
     const product = new Product({
       name,
       description,
@@ -206,12 +220,8 @@ export const createProduct = async (req, res) => {
       isFeatured,
       seo: parsedSeo,
       ratings: parsedRatings,
-      imageUrl: compressedImages[0], // Use the first compressed image as the main image
-      media: compressedImages.slice(1).map(image => ({
-        url: image,
-        type: 'image',
-        alt: ''
-      }))
+      imageUrl: uniqueMediaArr[0]?.url || '',
+      media: uniqueMediaArr
     });
 
     await product.save();
@@ -270,29 +280,62 @@ export const updateProduct = asyncHandler(async (req, res) => {
     }
   }
 
+  // Handle image deletions if requested
+  if (updates.deletedImages && Array.isArray(updates.deletedImages)) {
+    const product = await Product.findById(id);
+    if (product) {
+      // Remove images from media array
+      product.media = product.media.filter(m => !updates.deletedImages.includes(m.url));
+      // Remove main image if it's in deletedImages
+      if (updates.deletedImages.includes(product.imageUrl)) {
+        product.imageUrl = '';
+      }
+      // Delete files from filesystem
+      for (const url of updates.deletedImages) {
+        const filePath = path.join(process.cwd(), url.startsWith('/') ? url.substring(1) : url);
+        try {
+          await fs.promises.unlink(filePath);
+        } catch (err) {
+          // Ignore if file doesn't exist
+        }
+      }
+      await product.save();
+
+      // If all images are deleted, ensure updates reflect this
+      if (!product.imageUrl && (!product.media || product.media.length === 0)) {
+        updates.imageUrl = '';
+        updates.media = [];
+      }
+    }
+    // Remove deletedImages from updates so it doesn't get set as a field
+    delete updates.deletedImages;
+  }
+
   // Handle file uploads if present
   if (req.files && req.files.length > 0) {
-    // First file becomes the main image
-    const mainFilePath = req.files[0].path;
-    // Convert absolute path to relative path for storage
-    let imageUrl = mainFilePath.split('uploads')[1];
-    // Ensure path starts with /
-    imageUrl = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
-    // Prepend /uploads to make it a proper URL path
-    updates.imageUrl = `/uploads${imageUrl}`;
-    
-    // Additional files become media
-    if (req.files.length > 1) {
-      updates.media = [];
-      for (let i = 1; i < req.files.length; i++) {
-        const filePath = req.files[i].path;
-        // Convert absolute path to relative path for storage
-        let mediaPath = filePath.split('uploads')[1];
-        // Ensure path starts with /
-        mediaPath = mediaPath.startsWith('/') ? mediaPath : `/${mediaPath}`;
-        // Prepend /uploads to make it a proper URL path
-        updates.media.push(`/uploads${mediaPath}`);
+    // All files become media, first is also imageUrl
+    const mediaArr = [];
+    for (let i = 0; i < req.files.length; i++) {
+      const filePath = req.files[i].path;
+      let mediaPath = filePath.split('uploads')[1];
+      mediaPath = mediaPath.startsWith('/') ? mediaPath : `/${mediaPath}`;
+      mediaArr.push({ url: `uploads${mediaPath}`, type: 'image', alt: '' });
+    }
+    // Deduplicate by url
+    const uniqueMediaArr = [];
+    const seenUrls = new Set();
+    for (const img of mediaArr) {
+      if (!seenUrls.has(img.url)) {
+        uniqueMediaArr.push(img);
+        seenUrls.add(img.url);
       }
+    }
+    updates.imageUrl = uniqueMediaArr[0]?.url || '';
+    updates.media = uniqueMediaArr;
+  } else {
+    // If no new files uploaded, do not overwrite media array
+    if ('media' in updates) {
+      delete updates.media;
     }
   }
 
