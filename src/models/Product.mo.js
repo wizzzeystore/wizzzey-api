@@ -158,6 +158,11 @@ ProductSchema.virtual('discountPercentage').get(function () {
   return 0;
 });
 
+// Virtual for inStock
+ProductSchema.virtual('inStock').get(function () {
+  return this.stock > 0;
+});
+
 // Pre-save middleware to generate slug
 ProductSchema.pre('save', function(next) {
   if (this.isModified('name')) {

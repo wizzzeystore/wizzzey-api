@@ -9,6 +9,13 @@ export const listSizeCharts = asyncHandler(async (req, res) => {
   return ApiResponse.success(res, 'Size charts retrieved', { sizeCharts });
 });
 
+// Get a size chart by ID
+export const getSizeChartById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const sizeChart = await SizeChart.findById(id);
+  return ApiResponse.success(res, 'Size chart retrieved', { sizeChart });
+});
+
 // Upload a new size chart (expects req.file for image)
 export const uploadSizeChart = asyncHandler(async (req, res) => {
   const { title, description } = req.body;

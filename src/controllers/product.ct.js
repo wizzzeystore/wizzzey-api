@@ -137,7 +137,7 @@ export const getProducts = asyncHandler(async (req, res) => {
 // Create a new product
 export const createProduct = async (req, res) => {
   try {
-    const { name, description, price, sku, categoryId, brandId, compareAtPrice, costPrice, stock, lowStockThreshold, availableSizes, colors, weight, dimensions, tags, status, isFeatured, seo, ratings, barcode } = req.body;
+    const { name, description, price, sku, categoryId, brandId, compareAtPrice, costPrice, stock, lowStockThreshold, availableSizes, colors, weight, dimensions, tags, status, isFeatured, seo, ratings, sizeChart } = req.body;
     const files = req.files;
 
     if (!name || !description || !price || !sku || !categoryId) {
@@ -222,7 +222,7 @@ export const createProduct = async (req, res) => {
       ratings: parsedRatings,
       imageUrl: uniqueMediaArr[0]?.url || '',
       media: uniqueMediaArr,
-      sizeChart: (req.body.sizeChart && mongoose.Types.ObjectId.isValid(req.body.sizeChart)) ? req.body.sizeChart : null
+      sizeChart: (sizeChart && mongoose.Types.ObjectId.isValid(sizeChart)) ? sizeChart : null
     });
 
     await product.save();
