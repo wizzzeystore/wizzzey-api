@@ -29,6 +29,13 @@ const AppSettingsSchema = new Schema(
       storeLogoUrl: { type: String, default: '' },
       storeLogo: { type: ImageSchema, default: null },
       heroImage: { type: ImageSchema, default: null },
+      footerImage: { type: ImageSchema, default: null },
+      footerText: {
+        title: { type: String, default: 'Fresh Styles Just In!' },
+        description: { type: String, default: "Don't miss out on our newest arrivals. Update your wardrobe with the latest looks." },
+        buttonText: { type: String, default: 'Explore New Arrivals' },
+        buttonLink: { type: String, default: '/shop?sortBy=createdAt&sortOrder=desc' }
+      },
       notifications: { type: NotificationsSchema, default: {} },
       apiSettings: { type: ApiSettingsSchema, default: {} }
   },

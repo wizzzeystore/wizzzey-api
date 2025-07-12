@@ -174,6 +174,29 @@ export const uploadHeroImage = asyncHandler(async (req, res) => {
   });
 });
 
+// Upload footer image
+export const uploadFooterImage = asyncHandler(async (req, res) => {
+  const file = req.file;
+  validateImageFile(file);
+
+  const settings = await getOrCreateSettings();
+  
+  // Delete old footer image file if exists
+  if (settings.footerImage) {
+    await deleteOldImage(settings.footerImage);
+  }
+
+  // Create new image object
+  const baseUrl = getBaseUrl(req);
+  settings.footerImage = createImageObject(file, baseUrl);
+  
+  await settings.save();
+
+  return ApiResponse.success(res, 'Footer image uploaded successfully', { 
+    footerImage: settings.footerImage 
+  });
+});
+
 // Delete store logo
 export const deleteStoreLogo = asyncHandler(async (req, res) => {
   const settings = await getOrCreateSettings();
@@ -205,6 +228,28 @@ export const deleteHeroImage = asyncHandler(async (req, res) => {
     return ApiResponse.success(res, 'Hero image deleted successfully');
   } catch (error) {
     console.error('Error deleting hero image:', error);
+    throw error;
+  }
+});
+
+// Delete footer image
+export const deleteFooterImage = asyncHandler(async (req, res) => {
+  try {
+    const settings = await getOrCreateSettings();
+    
+    if (settings.footerImage) {
+      console.log('Deleting footer image:', settings.footerImage);
+      await deleteOldImage(settings.footerImage);
+      settings.footerImage = null;
+      await settings.save();
+      console.log('Footer image deleted from database');
+    } else {
+      console.log('No footer image found to delete');
+    }
+
+    return ApiResponse.success(res, 'Footer image deleted successfully');
+  } catch (error) {
+    console.error('Error deleting footer image:', error);
     throw error;
   }
 });

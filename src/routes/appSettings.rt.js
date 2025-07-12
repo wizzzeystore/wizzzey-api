@@ -7,8 +7,10 @@ import {
   generateApiKey,
   uploadStoreLogo,
   uploadHeroImage,
+  uploadFooterImage,
   deleteStoreLogo,
-  deleteHeroImage
+  deleteHeroImage,
+  deleteFooterImage
 } from '../controllers/appSettings.ct.js';
 import { verifyToken, authorize } from '../middleware/auth.mw.js';
 import { upload } from '../middleware/fileUpload.mw.js';
@@ -26,8 +28,10 @@ router.post('/generate-api-key', verifyToken, authorize('Admin'), generateApiKey
 // File upload routes (admin only) - these must come before parameter routes
 router.post('/upload/logo', verifyToken, authorize('Admin'), upload.single('logo'), uploadStoreLogo);
 router.post('/upload/hero', verifyToken, authorize('Admin'), upload.single('hero'), uploadHeroImage);
+router.post('/upload/footer', verifyToken, authorize('Admin'), upload.single('footer'), uploadFooterImage);
 router.delete('/logo', verifyToken, authorize('Admin'), deleteStoreLogo);
 router.delete('/hero', verifyToken, authorize('Admin'), deleteHeroImage);
+router.delete('/footer', verifyToken, authorize('Admin'), deleteFooterImage);
 
 // Parameter routes (must come after specific routes)
 router.delete('/:id', verifyToken, authorize('Admin'), deleteAppSettings);
