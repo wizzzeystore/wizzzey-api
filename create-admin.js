@@ -68,6 +68,10 @@ const userSchema = new mongoose.Schema({
     canViewAnalytics: {
       type: Boolean,
       default: false
+    },
+    canManageReturns: {
+      type: Boolean,
+      default: false
     }
   },
   phone: {
@@ -115,7 +119,8 @@ const ADMIN_PERMISSIONS = {
   canManageOrders: true,
   canManageInventory: true,
   canManageBrands: true,
-  canViewAnalytics: true
+  canViewAnalytics: true,
+  canManageReturns: true
 };
 
 async function createAdminUser(email, password) {

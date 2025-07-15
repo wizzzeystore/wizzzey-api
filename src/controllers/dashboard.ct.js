@@ -75,15 +75,45 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
     { $limit: 5 }
   ]);
 
+  // Get today's return/exchange requests
+  const todayReturns = await Order.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: today, $lt: tomorrow },
+        returns: { $exists: true, $ne: [] }
+      }
+    },
+    { $unwind: "$returns" },
+    {
+      $match: {
+        "returns.requestedAt": { $gte: today, $lt: tomorrow }
+      }
+    },
+    {
+      $count: "count"
+    }
+  ]);
+  const todayReturnsCount = todayReturns[0]?.count || 0;
+
+  // Get total return/exchange requests
+  const totalReturns = await Order.aggregate([
+    { $match: { returns: { $exists: true, $ne: [] } } },
+    { $unwind: "$returns" },
+    { $count: "count" }
+  ]);
+  const totalReturnsCount = totalReturns[0]?.count || 0;
+
   return ApiResponse.success(res, 'Dashboard statistics retrieved successfully', {
     todayStats: {
       orders: todayOrders.length,
-      revenue: todayRevenue
+      revenue: todayRevenue,
+      returns: todayReturnsCount
     },
     overallStats: {
       totalOrders: orderStats[0]?.totalOrders || 0,
       totalRevenue: orderStats[0]?.totalRevenue || 0,
-      totalCustomers
+      totalCustomers,
+      totalReturns: totalReturnsCount
     },
     salesOverview: salesOverview.map(day => ({
       date: day._id,

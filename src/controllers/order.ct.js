@@ -345,3 +345,58 @@ export const updateReturnRequest = asyncHandler(async (req, res) => {
   await order.save();
   return ApiResponse.success(res, 'Return/exchange request updated', { return: ret });
 });
+
+// List all return/exchange requests across all orders (admin)
+export const listAllReturnRequests = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 20, status, type, sortBy = 'requestedAt', sortOrder = 'desc' } = req.query;
+
+  // Build match for filtering
+  const match = {};
+  if (status) match['returns.status'] = status;
+  if (type) match['returns.type'] = type;
+
+  // Unwind returns array, filter, and paginate
+  const pipeline = [
+    { $unwind: '$returns' },
+    { $match: Object.keys(match).length ? match : {} },
+    {
+      $sort: {
+        [`returns.${sortBy}`]: sortOrder === 'desc' ? -1 : 1
+      }
+    },
+    {
+      $facet: {
+        data: [
+          { $skip: (Number(page) - 1) * Number(limit) },
+          { $limit: Number(limit) },
+          {
+            $project: {
+              _id: 0,
+              orderId: '$_id',
+              orderNumber: 1,
+              customerInfo: 1,
+              returnRequest: '$returns',
+              createdAt: 1,
+              status: 1
+            }
+          }
+        ],
+        totalCount: [ { $count: 'count' } ]
+      }
+    }
+  ];
+
+  const result = await Order.aggregate(pipeline);
+  const data = result[0]?.data || [];
+  const total = result[0]?.totalCount?.[0]?.count || 0;
+  const totalPages = Math.ceil(total / Number(limit));
+
+  return ApiResponse.paginated(res, 'Return/exchange requests retrieved successfully', { requests: data }, {
+    total,
+    page: Number(page),
+    limit: Number(limit),
+    totalPages,
+    hasNextPage: page < totalPages,
+    hasPrevPage: page > 1
+  });
+});

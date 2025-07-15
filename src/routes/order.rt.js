@@ -7,6 +7,9 @@ import { upload, compressFiles } from '../middleware/fileUpload.mw.js';
 // GET all orders
 router.get('/', orderController.getAllOrders);
 
+// Admin: List all return/exchange requests
+router.get('/returns', orderController.listAllReturnRequests);
+
 // GET orders by current user ID
 router.get('/my-orders', verifyToken, orderController.getOrdersByUserId);
 
