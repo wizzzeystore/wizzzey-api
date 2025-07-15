@@ -86,6 +86,11 @@ export const getProducts = asyncHandler(async (req, res) => {
   if (brandId && mongoose.Types.ObjectId.isValid(brandId)) filter.brandId = brandId;
   if (size) filter.availableSizes = { $in: size.split(',') };
   if (color) filter['colors.name'] = { $in: color.split(',') };
+  // Add isFeatured filter
+  if (typeof req.query.isFeatured !== 'undefined') {
+    if (req.query.isFeatured === 'true') filter.isFeatured = true;
+    else if (req.query.isFeatured === 'false') filter.isFeatured = false;
+  }
 
   // Calculate pagination
   const skip = (Number(page) - 1) * Number(limit);
