@@ -120,7 +120,7 @@ const ADMIN_PERMISSIONS = {
   canManageInventory: true,
   canManageBrands: true,
   canViewAnalytics: true,
-  canManageReturns: true
+  canManageReturnExchange: true
 };
 
 async function createAdminUser(email, password) {

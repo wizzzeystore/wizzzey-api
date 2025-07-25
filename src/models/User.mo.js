@@ -58,6 +58,10 @@ const UserSchema = new Schema({
     canViewAnalytics: {
       type: Boolean,
       default: false
+    },
+    canManageReturnExchange: {
+      type: Boolean,
+      default: false
     }
   },
   phone: {
@@ -135,7 +139,8 @@ UserSchema.pre('save', function(next) {
           canManageOrders: true,
           canManageInventory: true,
           canManageBrands: true,
-          canViewAnalytics: true
+          canViewAnalytics: true,
+          canManageReturnExchange: true
         };
         break;
       case 'Moderator':
@@ -145,7 +150,8 @@ UserSchema.pre('save', function(next) {
           canManageOrders: true,
           canManageInventory: true,
           canManageBrands: false,
-          canViewAnalytics: true
+          canViewAnalytics: true,
+          canManageReturnExchange: false
         };
         break;
       case 'BrandPartner':
@@ -155,7 +161,8 @@ UserSchema.pre('save', function(next) {
           canManageOrders: true,
           canManageInventory: false,
           canManageBrands: false,
-          canViewAnalytics: false
+          canViewAnalytics: false,
+          canManageReturnExchange: false
         };
         break;
       case 'Customer':
@@ -165,7 +172,8 @@ UserSchema.pre('save', function(next) {
           canManageOrders: false,
           canManageInventory: false,
           canManageBrands: false,
-          canViewAnalytics: false
+          canViewAnalytics: false,
+          canManageReturnExchange: false
         };
         break;
     }

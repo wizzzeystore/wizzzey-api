@@ -67,6 +67,10 @@ const UserSchema = new mongoose.Schema({
     canViewAnalytics: {
       type: Boolean,
       default: false
+    },
+    canManageReturnExchange: {
+      type: Boolean,
+      default: false
     }
   },
   phone: {
@@ -133,7 +137,8 @@ async function migrateAdminPermissions() {
         canManageOrders: true,
         canManageInventory: true,
         canManageBrands: true,
-        canViewAnalytics: true
+        canViewAnalytics: true,
+        canManageReturnExchange: true
       };
 
       // Update the user with new permissions
