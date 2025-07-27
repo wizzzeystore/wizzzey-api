@@ -22,7 +22,8 @@ export const getProducts = asyncHandler(async (req, res) => {
     page = 1,
     limit = 10,
     sortBy = 'createdAt',
-    sortOrder = 'desc'
+    sortOrder = 'desc',
+    term = ''
   } = req.query;
 
   // If ID is provided, return single product
@@ -91,7 +92,13 @@ export const getProducts = asyncHandler(async (req, res) => {
     if (req.query.isFeatured === 'true') filter.isFeatured = true;
     else if (req.query.isFeatured === 'false') filter.isFeatured = false;
   }
-
+  if (term) {
+    filter.$or = [
+      { name: { $regex: term, $options: 'i' } },
+      { description: { $regex: term, $options: 'i' } },
+      { tags: { $in: [new RegExp(term, 'i')] } }
+    ];
+  }
   // Calculate pagination
   const skip = (Number(page) - 1) * Number(limit);
   const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
