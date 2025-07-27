@@ -23,7 +23,8 @@ export const getProducts = asyncHandler(async (req, res) => {
     limit = 10,
     sortBy = 'createdAt',
     sortOrder = 'desc',
-    term = ''
+    term = '',
+    random = false
   } = req.query;
 
   // If ID is provided, return single product
@@ -99,6 +100,46 @@ export const getProducts = asyncHandler(async (req, res) => {
       { tags: { $in: [new RegExp(term, 'i')] } }
     ];
   }
+
+  // Handle random products
+  if (random === 'true') {
+    // For random products, exclude featured products and use aggregation
+    filter.isFeatured = { $ne: true };
+    
+    const products = await Product.aggregate([
+      { $match: filter },
+      { $sample: { size: Number(limit) } }
+    ]);
+
+    return ApiResponse.paginated(res, 'Random products retrieved successfully', { products }, {
+      total: products.length,
+      page: 1,
+      limit: Number(limit),
+      totalPages: 1,
+      hasNextPage: false,
+      hasPrevPage: false,
+      filters: {
+        applied: { random: true, ...filter },
+        available: {
+          id,
+          name,
+          categoryId,
+          minPrice,
+          maxPrice,
+          inStock,
+          product_ids,
+          brandId,
+          size,
+          color
+        }
+      },
+      sort: {
+        by: 'random',
+        order: 'random'
+      }
+    });
+  }
+
   // Calculate pagination
   const skip = (Number(page) - 1) * Number(limit);
   const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
