@@ -73,6 +73,18 @@ export const getCategories = asyncHandler(async (req, res) => {
   if (id && mongoose.Types.ObjectId.isValid(id)) filter._id = id;
   if (name) filter.name = { $regex: name, $options: 'i' };
   if (parentId && mongoose.Types.ObjectId.isValid(parentId)) filter.parentId = parentId;
+  
+  // For public endpoints (like web store), only show active categories
+  // Admin endpoints can override this by passing showAll=true or isActive explicitly
+  if (req.query.showAll === 'true') {
+    // Show all categories (both active and inactive) for admin
+    // Don't add isActive filter
+  } else if (req.query.isActive !== undefined) {
+    filter.isActive = req.query.isActive === 'true';
+  } else {
+    // Default behavior: only show active categories
+    filter.isActive = true;
+  }
 
   // Calculate pagination
   const skip = (Number(page) - 1) * Number(limit);
@@ -217,7 +229,7 @@ export const updateCategory = asyncHandler(async (req, res) => {
 
 // Delete a category
 export const deleteCategory = asyncHandler(async (req, res) => {
-  const { id } = req.query;
+  const { id } = req.params;
   if (!id || !mongoose.Types.ObjectId.isValid(id)) {
     throw new ApiError(400, 'Invalid category ID');
   }
