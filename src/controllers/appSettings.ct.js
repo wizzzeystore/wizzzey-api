@@ -197,6 +197,44 @@ export const uploadFooterImage = asyncHandler(async (req, res) => {
   });
 });
 
+// Upload hero image (MOBILE)
+export const uploadHeroImageMobile = asyncHandler(async (req, res) => {
+  const file = req.file;
+  validateImageFile(file);
+
+  const settings = await getOrCreateSettings();
+  // Delete old hero image mobile file if exists
+  if (settings.heroImageMobile) {
+    await deleteOldImage(settings.heroImageMobile);
+  }
+  // Create new image object
+  const baseUrl = getBaseUrl(req);
+  settings.heroImageMobile = createImageObject(file, baseUrl);
+  await settings.save();
+  return ApiResponse.success(res, 'Mobile hero image uploaded successfully', {
+    heroImageMobile: settings.heroImageMobile
+  });
+});
+
+// Upload footer image (MOBILE)
+export const uploadFooterImageMobile = asyncHandler(async (req, res) => {
+  const file = req.file;
+  validateImageFile(file);
+
+  const settings = await getOrCreateSettings();
+  // Delete old footer image mobile file if exists
+  if (settings.footerImageMobile) {
+    await deleteOldImage(settings.footerImageMobile);
+  }
+  // Create new image object
+  const baseUrl = getBaseUrl(req);
+  settings.footerImageMobile = createImageObject(file, baseUrl);
+  await settings.save();
+  return ApiResponse.success(res, 'Mobile footer image uploaded successfully', {
+    footerImageMobile: settings.footerImageMobile
+  });
+});
+
 // Delete store logo
 export const deleteStoreLogo = asyncHandler(async (req, res) => {
   const settings = await getOrCreateSettings();
