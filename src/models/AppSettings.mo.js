@@ -36,6 +36,12 @@ const AppSettingsSchema = new Schema(
         buttonText: { type: String, default: 'Explore New Arrivals' },
         buttonLink: { type: String, default: '/shop?sortBy=createdAt&sortOrder=desc' }
       },
+      announcementBar: {
+        enabled: { type: Boolean, default: true },
+        text: { type: String, default: 'ADDITIONAL 10% OFF ON PREPAID ORDERS' },
+        backgroundColor: { type: String, default: '#000000' },
+        textColor: { type: String, default: '#ffffff' }
+      },
       notifications: { type: NotificationsSchema, default: {} },
       apiSettings: { type: ApiSettingsSchema, default: {} }
   },
