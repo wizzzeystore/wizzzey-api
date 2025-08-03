@@ -69,7 +69,7 @@ const userSchema = new mongoose.Schema({
       type: Boolean,
       default: false
     },
-    canManageReturns: {
+    canManageReturnExchange: {
       type: Boolean,
       default: false
     }
