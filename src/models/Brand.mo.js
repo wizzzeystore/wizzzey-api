@@ -178,16 +178,16 @@ brandSchema.virtual('productCount', {
 
 // Virtual for active orders count
 brandSchema.virtual('activeOrdersCount').get(function() {
-  return this.orderPlaced.filter(order => 
+  return this.orderPlaced ? this.orderPlaced.filter(order => 
     ['pending', 'processing'].includes(order.status)
-  ).length;
+  ).length : 0;
 });
 
 // Virtual for pending out of stock orders count
 brandSchema.virtual('pendingOutOfStockOrdersCount').get(function() {
-  return this.outOfStockOrders.filter(order => 
+  return this.outOfStockOrders ? this.outOfStockOrders.filter(order => 
     order.status === 'pending'
-  ).length;
+  ).length : 0;
 });
 
 // Pre-save middleware to generate slug

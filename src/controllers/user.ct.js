@@ -145,13 +145,19 @@ export const createUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Brand assignment is required for BrandPartner role');
   }
 
-  if (assignedBrand && !mongoose.Types.ObjectId.isValid(assignedBrand)) {
+  // Handle assignedBrand properly - similar to updateUser
+  let brandId = assignedBrand;
+  if (typeof assignedBrand === 'object' && assignedBrand && assignedBrand._id) {
+    brandId = assignedBrand._id;
+  }
+  
+  if (brandId && !mongoose.Types.ObjectId.isValid(brandId)) {
     throw new ApiError(400, 'Invalid brand ID');
   }
 
   // Check if brand exists if assigned
-  if (assignedBrand) {
-    const brand = await Brand.findById(assignedBrand);
+  if (brandId) {
+    const brand = await Brand.findById(brandId);
     if (!brand) {
       throw new ApiError(400, 'Assigned brand not found');
     }
@@ -180,8 +186,8 @@ export const createUser = asyncHandler(async (req, res) => {
     phone
   };
 
-  if (assignedBrand) {
-    userData.assignedBrand = assignedBrand;
+  if (brandId) {
+    userData.assignedBrand = brandId;
   }
 
   // Only allow custom permissions for Admin role
@@ -202,6 +208,7 @@ export const createUser = asyncHandler(async (req, res) => {
 // Update user
 export const updateUser = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  
   if (!id || !mongoose.Types.ObjectId.isValid(id)) {
     throw new ApiError(400, 'Invalid user ID');
   }
@@ -233,30 +240,64 @@ export const updateUser = asyncHandler(async (req, res) => {
 
   // Validate brand assignment
   if (updates.assignedBrand) {
-    if (!mongoose.Types.ObjectId.isValid(updates.assignedBrand)) {
-      throw new ApiError(400, 'Invalid brand ID');
+    // Handle case where frontend sends an object instead of string
+    let brandId = updates.assignedBrand;
+    if (typeof updates.assignedBrand === 'object' && updates.assignedBrand._id) {
+      brandId = updates.assignedBrand._id;
     }
     
-    const brand = await Brand.findById(updates.assignedBrand);
-    if (!brand) {
-      throw new ApiError(400, 'Assigned brand not found');
+    // If brandId is empty or null, set assignedBrand to null
+    if (!brandId || brandId === '') {
+      updates.assignedBrand = null;
+    } else {
+      if (!mongoose.Types.ObjectId.isValid(brandId)) {
+        throw new ApiError(400, 'Invalid brand ID');
+      }
+      
+      const brand = await Brand.findById(brandId);
+      if (!brand) {
+        throw new ApiError(400, 'Assigned brand not found');
+      }
+      
+      updates.assignedBrand = brandId;
     }
   }
 
-  // Only allow permission updates for Admin role
-  if (updates.permissions && req.user.role !== 'Admin') {
-    delete updates.permissions;
+  // Handle permissions separately to avoid pre-save middleware conflicts
+  let permissionsUpdate = null;
+  if (updates.permissions && req.user.role === 'Admin') {
+    permissionsUpdate = updates.permissions;
+    delete updates.permissions; // Remove from main updates to avoid middleware conflicts
   }
 
-  const updatedUser = await UserModel.findByIdAndUpdate(
-    id, 
-    updates, 
-    { new: true, runValidators: true }
-  )
-  .select('-password')
-  .populate('assignedBrand', 'name slug');
+  try {
+    // First update the main user data
+    const updatedUser = await UserModel.findByIdAndUpdate(
+      id, 
+      updates, 
+      { new: true, runValidators: true }
+    )
+    .select('-password')
+    .populate('assignedBrand', 'name slug');
 
-  return ApiResponse.success(res, 'User updated successfully', { user: updatedUser });
+    // Then update permissions separately if provided
+    if (permissionsUpdate) {
+      await UserModel.findByIdAndUpdate(
+        id,
+        { permissions: permissionsUpdate },
+        { new: true, runValidators: false } // Don't run validators for permissions update
+      );
+    }
+
+    // Get the final updated user
+    const finalUser = await UserModel.findById(id)
+      .select('-password')
+      .populate('assignedBrand', 'name slug');
+
+    return ApiResponse.success(res, 'User updated successfully', { user: finalUser });
+  } catch (error) {
+    throw error;
+  }
 });
 
 // Delete user
