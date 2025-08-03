@@ -4,15 +4,28 @@ import { ApiResponse } from '../utils/responseHandler.ut.js';
 // Get all brands
 export const getBrands = async (req, res) => {
   try {
-    const { searchTerm } = req.query;
+    const { searchTerm, page = 1, limit = 10 } = req.query;
     const filter = {};
 
     if (searchTerm) {
       filter.name = { $regex: searchTerm, $options: 'i' };
     }
 
-    const brands = await Brand.find(filter).sort({ name: 1 });
-    return ApiResponse.success(res, 'Brands retrieved successfully', { brands });
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    const [brands, total] = await Promise.all([
+      Brand.find(filter).sort({ name: 1 }).skip(skip).limit(limitNum),
+      Brand.countDocuments(filter)
+    ]);
+
+    return ApiResponse.paginated(res, 'Brands retrieved successfully', { brands }, {
+      page: pageNum,
+      limit: limitNum,
+      total,
+      totalPages: Math.ceil(total / limitNum)
+    });
   } catch (error) {
     return ApiResponse.error(res, 'Failed to retrieve brands');
   }
