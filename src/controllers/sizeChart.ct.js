@@ -5,8 +5,21 @@ import fs from 'fs';
 
 // List all size charts
 export const listSizeCharts = asyncHandler(async (req, res) => {
-  const sizeCharts = await SizeChart.find().sort({ createdAt: -1 });
-  return ApiResponse.success(res, 'Size charts retrieved', { sizeCharts });
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const [sizeCharts, total] = await Promise.all([
+    SizeChart.find().sort({ createdAt: -1 }).skip(skip).limit(limit),
+    SizeChart.countDocuments()
+  ]);
+
+  return ApiResponse.paginated(res, 'Size charts retrieved', { sizeCharts }, {
+    page,
+    limit,
+    total,
+    totalPages: Math.ceil(total / limit)
+  });
 });
 
 // Get a size chart by ID
