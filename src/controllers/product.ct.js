@@ -1,4 +1,5 @@
 import { Product } from '../models/Product.mo.js';
+import { Category } from '../models/Category.mo.js';
 import mongoose from 'mongoose';
 import { ApiResponse, asyncHandler, ApiError } from '../utils/responseHandler.ut.js';
 import path from 'path';
@@ -94,11 +95,43 @@ export const getProducts = asyncHandler(async (req, res) => {
     else if (req.query.isFeatured === 'false') filter.isFeatured = false;
   }
   if (term) {
-    filter.$or = [
-      { name: { $regex: term, $options: 'i' } },
-      { description: { $regex: term, $options: 'i' } },
-      { tags: { $in: [new RegExp(term, 'i')] } }
+    // Build regex once
+    const termRegex = new RegExp(term, 'i');
+
+    // Attempt to match categories by name and include their products as well
+    let categoryIdsForTerm = [];
+    try {
+      const matchedCategories = await Category.find(
+        { name: { $regex: termRegex }, isActive: true },
+        { _id: 1 }
+      );
+      const matchedIds = matchedCategories.map((c) => c._id);
+      if (matchedIds.length > 0) {
+        const descendantCategories = await Category.find(
+          { path: { $in: matchedIds }, isActive: true },
+          { _id: 1 }
+        );
+        const descendantIds = descendantCategories.map((c) => c._id);
+        const allIds = [...matchedIds, ...descendantIds];
+        // Deduplicate ObjectIds
+        const uniqueIds = Array.from(new Set(allIds.map((id) => id.toString())));
+        categoryIdsForTerm = uniqueIds;
+      }
+    } catch (_) {
+      // If category lookup fails, continue without category-based expansion
+      categoryIdsForTerm = [];
+    }
+
+    const orClauses = [
+      { name: { $regex: termRegex } },
+      { description: { $regex: termRegex } },
+      { tags: { $in: [termRegex] } }
     ];
+    if (categoryIdsForTerm.length > 0) {
+      orClauses.push({ categoryId: { $in: categoryIdsForTerm } });
+    }
+
+    filter.$or = orClauses;
   }
 
   // Handle random products
