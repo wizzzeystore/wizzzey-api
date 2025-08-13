@@ -21,6 +21,8 @@ class CleanupService {
   constructor() {
     this.uploadsDir = path.join(__dirname, '../../uploads');
     this.isRunning = false;
+    this.task = null;
+    this.schedulerActive = false;
   }
 
   /**
@@ -242,18 +244,31 @@ class CleanupService {
    * Start the cleanup service scheduler
    */
   startScheduler() {
+    // Prevent duplicate schedulers
+    if (this.task) {
+      logger.warn('Cleanup scheduler already active; restarting.');
+      try {
+        this.task.stop();
+        this.task.destroy();
+      } catch (_) {}
+      this.task = null;
+    }
+
     // Schedule cleanup to run every day at 12:00 AM IST (6:30 PM UTC)
     // Cron format: minute hour day month day-of-week
     // IST is UTC+5:30, so 12:00 AM IST = 6:30 PM UTC (previous day)
     const cronExpression = '30 18 * * *'; // 6:30 PM UTC = 12:00 AM IST next day
 
-    cron.schedule(cronExpression, () => {
-      logger.info('Scheduled cleanup service triggered');
-      this.performCleanup();
-    }, {
-      timezone: 'UTC'
-    });
+    this.task = cron.schedule(
+      cronExpression,
+      () => {
+        logger.info('Scheduled cleanup service triggered');
+        this.performCleanup();
+      },
+      { timezone: 'UTC' }
+    );
 
+    this.schedulerActive = true;
     logger.info('Cleanup service scheduler started - will run daily at 12:00 AM IST');
   }
 
@@ -261,8 +276,21 @@ class CleanupService {
    * Stop the cleanup service scheduler
    */
   stopScheduler() {
-    cron.getTasks().forEach(task => task.stop());
+    if (this.task) {
+      try {
+        this.task.stop();
+        this.task.destroy();
+      } catch (error) {
+        logger.warn('Error stopping scheduler:', error);
+      }
+      this.task = null;
+    }
+    this.schedulerActive = false;
     logger.info('Cleanup service scheduler stopped');
+  }
+
+  isSchedulerActive() {
+    return !!this.task && this.schedulerActive === true;
   }
 
   /**

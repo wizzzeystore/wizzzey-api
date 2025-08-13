@@ -36,7 +36,7 @@ export const getCleanupStatus = async (req, res) => {
   try {
     const status = {
       isRunning: cleanupService.isRunning,
-      schedulerActive: true, // Assuming scheduler is always active when service is loaded
+      schedulerActive: cleanupService.isSchedulerActive && typeof cleanupService.isSchedulerActive === 'function' ? cleanupService.isSchedulerActive() : !!cleanupService.task,
       lastRun: null, // Could be enhanced to track last run time
       nextScheduledRun: 'Daily at 12:00 AM IST (6:30 PM UTC)',
       uploadsDirectory: cleanupService.uploadsDir
@@ -120,7 +120,7 @@ export const stopCleanupScheduler = async (req, res) => {
   try {
     cleanupService.stopScheduler();
     
-    return responseHandler(res, 200, 'OK', 'Cleanup scheduler stopped successfully', {
+    return ApiResponse.success(res, 'Cleanup scheduler stopped successfully', {
       message: 'Cleanup scheduler has been stopped',
       timestamp: new Date().toISOString()
     });
