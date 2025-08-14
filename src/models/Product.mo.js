@@ -80,9 +80,10 @@ const ProductSchema = new Schema(
       type: String,
       trim: true
     }],
+    // Legacy color field - kept for backward compatibility
     colors: [{
-      name: { type: String, required: true },
-      code: { type: String, required: true }
+      name: { type: String },
+      code: { type: String }
     }],
     weight: {
       value: { type: Number, min: 0 },
@@ -119,6 +120,16 @@ const ProductSchema = new Schema(
     sizeChart: {
       type: Schema.Types.ObjectId,
       ref: 'SizeChart',
+      default: null
+    },
+    // New fields for variant support
+    hasVariants: {
+      type: Boolean,
+      default: false
+    },
+    defaultVariantId: {
+      type: Schema.Types.ObjectId,
+      ref: 'ProductVariant',
       default: null
     }
   },
@@ -160,6 +171,10 @@ ProductSchema.virtual('discountPercentage').get(function () {
 
 // Virtual for inStock
 ProductSchema.virtual('inStock').get(function () {
+  if (this.hasVariants) {
+    // For products with variants, check if any variant has stock
+    return true; // This will be calculated dynamically when variants are loaded
+  }
   return this.stock > 0;
 });
 

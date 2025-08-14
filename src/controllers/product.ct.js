@@ -1,5 +1,6 @@
 import { Product } from '../models/Product.mo.js';
 import { Category } from '../models/Category.mo.js';
+import { ProductVariant } from '../models/ProductVariant.mo.js';
 import mongoose from 'mongoose';
 import { ApiResponse, asyncHandler, ApiError } from '../utils/responseHandler.ut.js';
 import path from 'path';
@@ -39,7 +40,16 @@ export const getProducts = asyncHandler(async (req, res) => {
       throw new ApiError(404, 'Product not found');
     }
 
-    return ApiResponse.success(res, 'Product retrieved successfully', { product });
+    // If product has variants, fetch them
+    let variants = [];
+    if (product.hasVariants) {
+      variants = await ProductVariant.findByProduct(id);
+    }
+
+    return ApiResponse.success(res, 'Product retrieved successfully', { 
+      product,
+      variants: product.hasVariants ? variants : undefined
+    });
   }
 
   // If product_ids is provided, return products for those specific IDs

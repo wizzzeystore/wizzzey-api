@@ -52,6 +52,7 @@ import userRoutes from './src/routes/user.rt.js';
 
 // Product Management
 import productRoutes from './src/routes/product.rt.js';
+import productVariantRoutes from './src/routes/productVariant.rt.js';
 import categoryRoutes from './src/routes/category.rt.js';
 import brandRoutes from './src/routes/brand.rt.js';
 import inventoryRoutes from './src/routes/inventory.rt.js';
@@ -83,6 +84,7 @@ app.use('/api/users', userRoutes);
 
 // Product Management
 app.use('/api/products', productRoutes);
+app.use('/api/product-variants', productVariantRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/brands', brandRoutes);
 app.use('/api/inventory', inventoryRoutes);
