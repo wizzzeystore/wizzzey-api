@@ -79,14 +79,74 @@ export const getProducts = asyncHandler(async (req, res) => {
   // Build filter for list operation
   const filter = {};
   if (name) filter.name = { $regex: name, $options: 'i' };
-  if (categoryId && mongoose.Types.ObjectId.isValid(categoryId)) filter.categoryId = categoryId;
+  // Support multiple categoryIds via comma-separated string, JSON array string, or array
+  if (categoryId) {
+    let categoryIdsArray = [];
+    if (Array.isArray(categoryId)) {
+      categoryIdsArray = categoryId;
+    } else if (typeof categoryId === 'string') {
+      try {
+        const parsed = JSON.parse(categoryId);
+        if (Array.isArray(parsed)) {
+          categoryIdsArray = parsed;
+        } else if (categoryId.includes(',')) {
+          categoryIdsArray = categoryId.split(',').map((id) => id.trim());
+        } else {
+          categoryIdsArray = [categoryId];
+        }
+      } catch (_) {
+        if (categoryId.includes(',')) {
+          categoryIdsArray = categoryId.split(',').map((id) => id.trim());
+        } else {
+          categoryIdsArray = [categoryId];
+        }
+      }
+    }
+
+    const validCategoryIds = categoryIdsArray.filter((id) => mongoose.Types.ObjectId.isValid(id));
+    if (validCategoryIds.length === 1) {
+      filter.categoryId = validCategoryIds[0];
+    } else if (validCategoryIds.length > 1) {
+      filter.categoryId = { $in: validCategoryIds };
+    }
+  }
   if (minPrice || maxPrice) {
     filter.price = {};
     if (minPrice) filter.price.$gte = Number(minPrice);
     if (maxPrice) filter.price.$lte = Number(maxPrice);
   }
   if (inStock !== undefined) filter.inStock = inStock === 'true';
-  if (brandId && mongoose.Types.ObjectId.isValid(brandId)) filter.brandId = brandId;
+  // Support multiple brandIds via comma-separated string, JSON array string, or array
+  if (brandId) {
+    let brandIdsArray = [];
+    if (Array.isArray(brandId)) {
+      brandIdsArray = brandId;
+    } else if (typeof brandId === 'string') {
+      try {
+        const parsed = JSON.parse(brandId);
+        if (Array.isArray(parsed)) {
+          brandIdsArray = parsed;
+        } else if (brandId.includes(',')) {
+          brandIdsArray = brandId.split(',').map((id) => id.trim());
+        } else {
+          brandIdsArray = [brandId];
+        }
+      } catch (_) {
+        if (brandId.includes(',')) {
+          brandIdsArray = brandId.split(',').map((id) => id.trim());
+        } else {
+          brandIdsArray = [brandId];
+        }
+      }
+    }
+
+    const validBrandIds = brandIdsArray.filter((id) => mongoose.Types.ObjectId.isValid(id));
+    if (validBrandIds.length === 1) {
+      filter.brandId = validBrandIds[0];
+    } else if (validBrandIds.length > 1) {
+      filter.brandId = { $in: validBrandIds };
+    }
+  }
   if (size) filter.availableSizes = { $in: size.split(',') };
   if (color) filter['colors.name'] = { $in: color.split(',') };
   // Add isFeatured filter
